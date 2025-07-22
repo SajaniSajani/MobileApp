@@ -1,12 +1,29 @@
-
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  Login: undefined;
+  Dashboard: undefined;
+};
 
 const LoginScreen = () => {
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogin = () => {
+    if (username === 'admin' && password === 'admin') {
+      setError('');
+      navigation.navigate('Dashboard');
+    } else {
+      setError('Invalid username or password');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -41,6 +58,8 @@ const LoginScreen = () => {
               secureTextEntry
             />
 
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
             <View style={styles.row}>
               <View style={styles.checkboxContainer}>
                 <CheckBox
@@ -54,7 +73,7 @@ const LoginScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Text style={styles.buttonText}>Sign In</Text>
             </TouchableOpacity>
 
@@ -71,6 +90,13 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  error: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f4f7fe',
@@ -180,4 +206,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default LoginScreen; 

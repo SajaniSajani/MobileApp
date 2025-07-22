@@ -103,11 +103,197 @@ const ProjectOverviewScreen = () => {
           </View>
         ))}
       </View>
+        {/* Defect Metrics Cards (Image-like) */}
+        <View style={styles.metricsRow}>
+          {/* Defect Density Card */}
+          <View style={styles.metricCard}>
+            <Text style={styles.metricTitle}>Defect Density</Text>
+            <View style={styles.gaugeContainer}>
+              {/* Simulated Gauge */}
+              <View style={styles.gaugeArc}>
+                <View style={[styles.gaugeNeedle, { transform: [{ rotate: '35deg' }] }]} />
+              </View>
+              <Text style={styles.metricValueLabel}>
+                Defect Density: <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>11.18</Text>
+              </Text>
+            </View>
+          </View>
+          {/* Defect Severity Index Card */}
+          <View style={styles.metricCard}>
+            <Text style={styles.metricTitle}>Defect Severity Index</Text>
+            <View style={styles.severityIndexContainer}>
+              <View style={styles.severityBarBg}>
+                <View style={[styles.severityBarFill, { height: '67.2%' }]} />
+              </View>
+              <Text style={styles.metricSeverityValue}>67.2</Text>
+            </View>
+            <Text style={styles.metricDesc}>Weighted severity score (higher = more severe defects)</Text>
+          </View>
+          {/* Defect to Remark Ratio Card */}
+          <View style={styles.metricCard}>
+            <Text style={styles.metricTitle}>Defect to Remark Ratio</Text>
+            <View style={styles.ratioCardBox}>
+              <Text style={styles.ratioValue}>3:1</Text>
+              <Text style={styles.ratioLabel}>Defects per Remark</Text>
+              <View style={styles.ratioCriticalBox}>
+                <Text style={styles.ratioCriticalText}>Critical</Text>
+              </View>
+              <View style={styles.ratioBarBg}>
+                <View style={styles.ratioBarFill} />
+              </View>
+            </View>
+          </View>
+        </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginHorizontal: 8,
+    marginTop: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  metricCard: {
+    flex: 1,
+    minWidth: 220,
+    maxWidth: 300,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 6,
+    marginBottom: 12,
+    alignItems: 'center',
+    padding: 18,
+    elevation: 2,
+  },
+  metricTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#222',
+    marginBottom: 8,
+  },
+  gaugeContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  gaugeArc: {
+    width: 90,
+    height: 50,
+    borderTopLeftRadius: 90,
+    borderTopRightRadius: 90,
+    borderWidth: 8,
+    borderColor: '#22c55e',
+    borderBottomWidth: 0,
+    borderRightColor: '#ef4444',
+    borderLeftColor: '#eab308',
+    borderTopColor: '#22c55e',
+    backgroundColor: '#fff',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 4,
+    position: 'relative',
+  },
+  gaugeNeedle: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    width: 2,
+    height: 38,
+    backgroundColor: '#222',
+    borderRadius: 1,
+    marginLeft: -1,
+    zIndex: 2,
+  },
+  metricValueLabel: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#222',
+    marginTop: 2,
+  },
+  severityIndexContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  severityBarBg: {
+    width: 16,
+    height: 60,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    marginRight: 10,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  severityBarFill: {
+    width: 16,
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  metricSeverityValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#ef4444',
+    marginLeft: 4,
+  },
+  metricDesc: {
+    fontSize: 13,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  ratioCardBox: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 4,
+  },
+  ratioValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 2,
+  },
+  ratioLabel: {
+    fontSize: 15,
+    color: '#222',
+    marginBottom: 4,
+  },
+  ratioCriticalBox: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginBottom: 6,
+  },
+  ratioCriticalText: {
+    color: '#ef4444',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  ratioBarBg: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#fee2e2',
+    borderRadius: 4,
+    marginTop: 2,
+    marginBottom: 2,
+    overflow: 'hidden',
+  },
+  ratioBarFill: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#ef4444',
+    borderRadius: 4,
+  },
   bg: {
     flex: 1,
     backgroundColor: '#f8fafc',

@@ -45,7 +45,7 @@ const DashboardScreen = () => {
         </View>
         <View style={[styles.statusCard, { borderColor: '#facc15' }]}> 
           <View style={styles.mediumRiskCircleIcon}>
-            <Text style={styles.mediumRiskIconText}>🕒</Text>
+            {/*<Text style={styles.mediumRiskIconText}>🕒</Text>*/}
           </View>
           <Text style={styles.statusCardTitle}>Medium Risk Projects</Text>
           <Text style={[styles.statusCount, { color: '#facc15' }]}>{mediumRiskCount}</Text>
@@ -53,7 +53,7 @@ const DashboardScreen = () => {
         </View>
         <View style={[styles.statusCard, { borderColor: '#22c55e' }]}> 
           <View style={styles.lowRiskCircleIcon}>
-            <Text style={styles.lowRiskIconText}>✔️</Text>
+            {/* <Text style={styles.lowRiskIconText}>✔️</Text> */}
           </View>
           <Text style={styles.statusCardTitle}>Low Risk Projects</Text>
           <Text style={[styles.statusCount, { color: '#22c55e' }]}>{lowRiskCount}</Text>
@@ -81,7 +81,7 @@ const DashboardScreen = () => {
             style={[styles.projectCard, { backgroundColor: RISK_COLORS[project.risk] }]}
             onPress={() => navigation.navigate('ProjectOverview', { name: project.name, risk: project.risk })}
           >
-            <Text style={styles.projectIcon}>✔️</Text>
+            {/* <Text style={styles.projectIcon}>✔️</Text> */}
             <Text style={styles.projectName}>{project.name}</Text>
             <View style={styles.projectRiskLabelBox}>
               <Text style={styles.projectRiskLabel}>{project.risk} Risk</Text>

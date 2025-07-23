@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../App';
@@ -20,6 +21,9 @@ const ProjectOverviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<ProjectOverviewRouteProp>();
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
+  const [showHighStatusModal, setShowHighStatusModal] = useState(false);
+  const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
+  const [showLowStatusModal, setShowLowStatusModal] = useState(false);
   const project = PROJECTS[selectedProjectIdx] || PROJECTS[0];
   const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
@@ -101,11 +105,189 @@ const ProjectOverviewScreen = () => {
                 </View>
               ))}
             </View>
-            <TouchableOpacity style={styles.chartBtn}>
-              <Text style={styles.chartBtnText}>View Chart</Text>
-            </TouchableOpacity>
+            {severity === 'High' && (
+              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowHighStatusModal(true)}>
+                <Text style={styles.chartBtnText}>View Chart</Text>
+              </TouchableOpacity>
+            )}
+            {severity === 'Medium' && (
+              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowMediumStatusModal(true)}>
+                <Text style={styles.chartBtnText}>View Chart</Text>
+              </TouchableOpacity>
+            )}
+            {severity === 'Low' && (
+              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowLowStatusModal(true)}>
+                <Text style={styles.chartBtnText}>View Chart</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))}
+      {/* Modal for Medium Status Breakdown Pie Chart */}
+      <Modal
+        visible={showMediumStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMediumStatusModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for Medium</Text>
+              <TouchableOpacity onPress={() => setShowMediumStatusModal(false)}>
+                <Text style={{ fontSize: 22, color: '#888', marginLeft: 12 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <PieChart
+              data={[
+                { name: 'REOPEN', population: 1, color: '#fb5607', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'NEW', population: 5, color: '#4361ee', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'OPEN', population: 2, color: '#f9c74f', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'FIXED', population: 3, color: '#43aa8b', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'CLOSED', population: 4, color: '#577590', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'REJECTED', population: 1, color: '#bc3908', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'DUPLICATE', population: 1, color: '#888888', legendFontColor: '#222', legendFontSize: 13 },
+              ]}
+              width={260}
+              height={220}
+              chartConfig={{
+                color: () => '#222',
+                labelColor: () => '#222',
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+              }}
+              accessor={'population'}
+              backgroundColor={'transparent'}
+              paddingLeft={'40'}
+              hasLegend={false}
+              absolute
+              style={{ marginVertical: 8, alignSelf: 'center' }}
+            />
+            {/* Custom Legend */}
+            <View style={{ marginTop: 12, width: 220 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#fb5607', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REOPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#4361ee', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>NEW</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#f9c74f', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>OPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#43aa8b', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>FIXED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#577590', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>CLOSED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#bc3908', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REJECTED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#888888', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>DUPLICATE</Text></View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal for Low Status Breakdown Pie Chart */}
+      <Modal
+        visible={showLowStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLowStatusModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for Low</Text>
+              <TouchableOpacity onPress={() => setShowLowStatusModal(false)}>
+                <Text style={{ fontSize: 22, color: '#888', marginLeft: 12 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <PieChart
+              data={[
+                { name: 'REOPEN', population: 1, color: '#fb5607', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'NEW', population: 3, color: '#4361ee', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'OPEN', population: 1, color: '#f9c74f', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'FIXED', population: 2, color: '#43aa8b', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'CLOSED', population: 2, color: '#577590', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'REJECTED', population: 0, color: '#bc3908', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'DUPLICATE', population: 0, color: '#888888', legendFontColor: '#222', legendFontSize: 13 },
+              ]}
+              width={260}
+              height={220}
+              chartConfig={{
+                color: () => '#222',
+                labelColor: () => '#222',
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+              }}
+              accessor={'population'}
+              backgroundColor={'transparent'}
+              paddingLeft={'40'}
+              hasLegend={false}
+              absolute
+              style={{ marginVertical: 8, alignSelf: 'center' }}
+            />
+            {/* Custom Legend */}
+            <View style={{ marginTop: 12, width: 220 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#fb5607', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REOPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#4361ee', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>NEW</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#f9c74f', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>OPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#43aa8b', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>FIXED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#577590', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>CLOSED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#bc3908', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REJECTED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#888888', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>DUPLICATE</Text></View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Modal for High Status Breakdown Pie Chart */}
+      <Modal
+        visible={showHighStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHighStatusModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for High</Text>
+              <TouchableOpacity onPress={() => setShowHighStatusModal(false)}>
+                <Text style={{ fontSize: 22, color: '#888', marginLeft: 12 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <PieChart
+              data={[
+                { name: 'REOPEN', population: 2, color: '#fb5607', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'NEW', population: 7, color: '#4361ee', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'OPEN', population: 3, color: '#f9c74f', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'FIXED', population: 4, color: '#43aa8b', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'CLOSED', population: 5, color: '#577590', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'REJECTED', population: 1, color: '#bc3908', legendFontColor: '#222', legendFontSize: 13 },
+                { name: 'DUPLICATE', population: 1, color: '#888888', legendFontColor: '#222', legendFontSize: 13 },
+              ]}
+              width={260}
+              height={220}
+              chartConfig={{
+                color: () => '#222',
+                labelColor: () => '#222',
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+              }}
+              accessor={'population'}
+              backgroundColor={'transparent'}
+              paddingLeft={'40'}
+              hasLegend={false}
+              absolute
+              style={{ marginVertical: 8, alignSelf: 'center' }}
+            />
+            {/* Custom Legend */}
+            <View style={{ marginTop: 12, width: 220 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#fb5607', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REOPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#4361ee', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>NEW</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#f9c74f', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>OPEN</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#43aa8b', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>FIXED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#577590', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>CLOSED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#bc3908', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>REJECTED</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}><View style={{ width: 18, height: 8, backgroundColor: '#888888', marginRight: 8 }} /><Text style={{ fontSize: 13 }}>DUPLICATE</Text></View>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </View>
         {/* Defect Metrics Cards (Image-like) */}
         <View style={styles.metricsRow}>
@@ -179,7 +361,7 @@ const ProjectOverviewScreen = () => {
                     }}
                     accessor={'population'}
                     backgroundColor={'transparent'}
-                    paddingLeft={'16'}
+                    paddingLeft={'80'}
                     hasLegend={false}
                     absolute
                   />
@@ -242,7 +424,7 @@ const ProjectOverviewScreen = () => {
           }}
           accessor={'population'}
           backgroundColor={'transparent'}
-          paddingLeft={'16'}
+          paddingLeft={'80'}
           hasLegend={false}
           absolute
         />
@@ -417,7 +599,7 @@ const ProjectOverviewScreen = () => {
           }}
           accessor={'population'}
           backgroundColor={'transparent'}
-          paddingLeft={'16'}
+          paddingLeft={'80'}
           hasLegend={false}
           absolute
         />

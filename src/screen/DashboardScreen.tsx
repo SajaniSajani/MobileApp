@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
@@ -8,6 +9,16 @@ import { PROJECTS, RISK_COLORS, RISK_FILTER_LABELS } from '../data/projectsData'
 const DashboardScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState('All Projects');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity style={{ marginRight: 12, backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
+          <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   const getFilteredProjects = () => {
     if (selectedFilter === 'All Projects') return PROJECTS;
@@ -45,7 +56,7 @@ const DashboardScreen = () => {
         </View>
         <View style={[styles.statusCard, { borderColor: '#facc15' }]}> 
           <View style={styles.mediumRiskCircleIcon}>
-            {/*<Text style={styles.mediumRiskIconText}>🕒</Text>*/}
+            <Text style={styles.mediumRiskIconText}>🕒</Text>
           </View>
           <Text style={styles.statusCardTitle}>Medium Risk Projects</Text>
           <Text style={[styles.statusCount, { color: '#facc15' }]}>{mediumRiskCount}</Text>
@@ -53,7 +64,7 @@ const DashboardScreen = () => {
         </View>
         <View style={[styles.statusCard, { borderColor: '#22c55e' }]}> 
           <View style={styles.lowRiskCircleIcon}>
-            {/* <Text style={styles.lowRiskIconText}>✔️</Text> */}
+             <Text style={styles.lowRiskIconText}>✔</Text> 
           </View>
           <Text style={styles.statusCardTitle}>Low Risk Projects</Text>
           <Text style={[styles.statusCount, { color: '#22c55e' }]}>{lowRiskCount}</Text>
@@ -78,10 +89,10 @@ const DashboardScreen = () => {
         {getFilteredProjects().map((project, idx) => (
           <TouchableOpacity
             key={idx}
-            style={[styles.projectCard, { backgroundColor: RISK_COLORS[project.risk] }]}
+            style={[styles.projectCard, { backgroundColor: RISK_COLORS[project.risk as keyof typeof RISK_COLORS] }]}
             onPress={() => navigation.navigate('ProjectOverview', { name: project.name, risk: project.risk })}
           >
-            {/* <Text style={styles.projectIcon}>✔️</Text> */}
+            {/* <Text style={styles.projectIcon}>✔</Text> */}
             <Text style={styles.projectName}>{project.name}</Text>
             <View style={styles.projectRiskLabelBox}>
               <Text style={styles.projectRiskLabel}>{project.risk} Risk</Text>
@@ -89,6 +100,10 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Defects Reopened Multiple Times Pie Chart Card */}
+
+  // ...existing code...
     </ScrollView>
   );
 };
@@ -290,6 +305,42 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  reopenedCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 16,
+    elevation: 2,
+    alignItems: 'flex-start',
+  },
+  reopenedTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#222',
+    marginBottom: 12,
+  },
+  legendBox: {
+    marginTop: 12,
+    marginLeft: 8,
+    justifyContent: 'center',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 8,
+  },
+  legendLabel: {
+    fontSize: 15,
+    color: '#222',
   },
 });
 

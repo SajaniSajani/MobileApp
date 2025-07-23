@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../App';
 import { 
@@ -9,17 +9,19 @@ import {
   RISK_COLORS, 
   RISK_LABELS 
 } from '../data/projectsData';
+import { PieChart, LineChart } from 'react-native-chart-kit';
+
+// Add type for DEFECT_DATA keys
+type DefectDataKey = keyof typeof DEFECT_DATA;
 
 type ProjectOverviewRouteProp = RouteProp<RootStackParamList, 'ProjectOverview'>;
 
 const ProjectOverviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<ProjectOverviewRouteProp>();
-  const [selectedProjectIdx, setSelectedProjectIdx] = useState(
-    Math.max(0, PROJECTS.findIndex(p => p.name === route.params?.name))
-  );
+  const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
   const project = PROJECTS[selectedProjectIdx] || PROJECTS[0];
-  const defectData = DEFECT_DATA[project.name] || DEFECT_DATA['Defect Tracker'];
+  const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
   const scrollToProject = (dir: 'left' | 'right') => {
     if (dir === 'left' && selectedProjectIdx > 0) setSelectedProjectIdx(selectedProjectIdx - 1);
@@ -35,6 +37,8 @@ const ProjectOverviewScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Time to Fix Defects Card (at the end) */}
+      {/* ...existing code... */}
       {/* Project Selection */}
       <View style={styles.projectSelectorBox}>
         <Text style={styles.projectSelectorLabel}>Project Selection</Text>
@@ -76,22 +80,22 @@ const ProjectOverviewScreen = () => {
       {/* Project Title & Status */}
       <View style={styles.projectTitleBox}>
         <Text style={styles.projectTitle}>{project.name}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: RISK_COLORS[project.risk] + '22' }]}> 
-          <Text style={[styles.statusBadgeText, { color: RISK_COLORS[project.risk] }]}>{RISK_LABELS[project.risk]}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: RISK_COLORS[project.risk as 'High' | 'Medium' | 'Low'] + '22' }]}> 
+          <Text style={[styles.statusBadgeText, { color: RISK_COLORS[project.risk as 'High' | 'Medium' | 'Low'] }]}>{RISK_LABELS[project.risk as 'High' | 'Medium' | 'Low']}</Text>
         </View>
       </View>
 
       {/* Defect Severity Breakdown */}
       <Text style={styles.sectionTitle}>Defect Severity Breakdown</Text>
       <View style={styles.defectRow}>
-        {['High', 'Medium', 'Low'].map(severity => (
+        {(['High', 'Medium', 'Low'] as const).map((severity) => (
           <View key={severity} style={[styles.defectCard, { borderColor: RISK_COLORS[severity] }]}> 
             <Text style={[styles.defectCardTitle, { color: RISK_COLORS[severity] }]}>Defects on {severity}</Text>
             <Text style={styles.defectTotal}>Total: {defectData[severity]?.total ?? 0}</Text>
             <View style={styles.defectList}>
               {Object.entries(defectData[severity] || {}).filter(([k]) => k !== 'total').map(([type, count]) => (
                 <View key={type} style={styles.defectItemRow}>
-                  <View style={[styles.dot, { backgroundColor: DEFECT_COLORS[type] || '#888' }]} />
+                  <View style={[styles.dot, { backgroundColor: DEFECT_COLORS[type as keyof typeof DEFECT_COLORS] || '#888' }]} />
                   <Text style={styles.defectType}>{type}</Text>
                   <Text style={styles.defectCount}>{count}</Text>
                 </View>
@@ -143,7 +147,294 @@ const ProjectOverviewScreen = () => {
               </View>
             </View>
           </View>
+
+                <View style={styles.reopenedCard}>
+                  <Text style={styles.reopenedTitle}>Defects Reopened Multiple Times</Text>
+                  <PieChart
+                    data={[
+                      {
+                        name: '2 times',
+                        population: 3,
+                        color: '#2563eb',
+                        legendFontColor: '#222',
+                        legendFontSize: 15,
+                      },
+                      {
+                        name: '3 times',
+                        population: 1,
+                        color: '#facc15',
+                        legendFontColor: '#222',
+                        legendFontSize: 15,
+                      },
+                    ]}
+                    width={Dimensions.get('window').width - 48}
+                    height={220}
+                    chartConfig={{
+                      color: () => '#222',
+                      labelColor: () => '#222',
+                      backgroundColor: '#fff',
+                      backgroundGradientFrom: '#fff',
+                      backgroundGradientTo: '#fff',
+                      decimalPlaces: 1,
+                    }}
+                    accessor={'population'}
+                    backgroundColor={'transparent'}
+                    paddingLeft={'16'}
+                    hasLegend={false}
+                    absolute
+                  />
+                  {/* Custom Legend */}
+                  <View style={styles.legendBox}>
+                    <View style={styles.legendRow}>
+                      <View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} />
+                      <Text style={styles.legendLabel}>2 times: 3 (75.0%)</Text>
+                    </View>
+                    <View style={styles.legendRow}>
+                      <View style={[styles.legendDot, { backgroundColor: '#facc15' }]} />
+                      <Text style={styles.legendLabel}>3 times: 1 (25.0%)</Text>
+                    </View>
+                  </View>
+                </View>
         </View>
+      {/* Defect Distribution by Type Card */}
+      <View style={styles.distributionCard}>
+        <Text style={styles.distributionTitle}>Defect Distribution by Type</Text>
+        <PieChart
+          data={[
+            {
+              name: 'Functionality',
+              population: 227,
+              color: '#2563eb',
+              legendFontColor: '#222',
+              legendFontSize: 15,
+            },
+            {
+              name: 'UI',
+              population: 81,
+              color: '#10b981',
+              legendFontColor: '#222',
+              legendFontSize: 15,
+            },
+            {
+              name: 'Usability',
+              population: 28,
+              color: '#facc15',
+              legendFontColor: '#222',
+              legendFontSize: 15,
+            },
+            {
+              name: 'Validation',
+              population: 100,
+              color: '#ef4444',
+              legendFontColor: '#222',
+              legendFontSize: 15,
+            },
+          ]}
+          width={Dimensions.get('window').width - 48}
+          height={220}
+          chartConfig={{
+            color: () => '#222',
+            labelColor: () => '#222',
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 1,
+          }}
+          accessor={'population'}
+          backgroundColor={'transparent'}
+          paddingLeft={'16'}
+          hasLegend={false}
+          absolute
+        />
+        {/* Custom Legend */}
+        <View style={styles.legendBox}>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} />
+            <Text style={styles.legendLabel}>Functionality: 227 (52.1%)</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+            <Text style={styles.legendLabel}>UI: 81 (18.6%)</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#facc15' }]} />
+            <Text style={styles.legendLabel}>Usability: 28 (6.4%)</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
+            <Text style={styles.legendLabel}>Validation: 100 (22.9%)</Text>
+          </View>
+        </View>
+        {/* Totals Row */}
+        <View style={styles.distributionTotalsRow}>
+          <View style={styles.distributionTotalBox}>
+            <Text style={styles.distributionTotalValue}>436</Text>
+            <Text style={styles.distributionTotalLabel}>Total Defects</Text>
+          </View>
+          <View style={styles.distributionTotalBox}>
+            <Text style={[styles.distributionTotalValue, { color: '#2563eb' }]}>227</Text>
+            <Text style={styles.distributionTotalLabel}>
+              Most Common{"\n"}
+              <Text style={{ fontWeight: 'bold' }}>Functionality</Text>
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Time to Find Defects Card (now after distribution card) */}
+      <View style={styles.timeToFindCard}>
+        <Text style={styles.timeToFindTitle}>Time to Find Defects</Text>
+        <LineChart
+          data={{
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            datasets: [
+              {
+                data: [2, 3, 1, 4, 2, 3, 2, 1, 2, 1],
+                color: () => '#2563eb',
+                strokeWidth: 2,
+              },
+            ],
+          }}
+          width={Dimensions.get('window').width - 48}
+          height={220}
+          yAxisSuffix={''}
+          yAxisInterval={1}
+          chartConfig={{
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 0,
+            color: () => '#2563eb',
+            labelColor: () => '#222',
+            propsForLabels: {
+              fontSize: 8,
+              fontWeight: '400',
+            },
+            propsForDots: {
+              r: '4',
+              strokeWidth: '2',
+              stroke: '#fff',
+              fill: '#2563eb',
+            },
+            propsForBackgroundLines: {
+              stroke: '#e5e7eb',
+            },
+          }}
+          bezier
+          style={{ marginVertical: 8, borderRadius: 12 }}
+          fromZero
+          segments={5}
+          yLabelsOffset={8}
+          xLabelsOffset={-4}
+          withInnerLines
+          withOuterLines
+          withDots
+        />
+        <View style={styles.timeToFindAxisLabels}>
+          <Text style={styles.timeToFindYAxis}>Defects Count</Text>
+          <Text style={styles.timeToFindXAxis}>Time (Day)</Text>
+        </View>
+      </View>
+      {/* Time to Fix Defects Card (after Time to Find Defects) */}
+      <View style={styles.timeToFindCard}>
+        <Text style={styles.timeToFindTitle}>Time to Fix Defects</Text>
+        <LineChart
+          data={{
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            datasets: [
+              {
+                data: [3, 2, 4, 3, 2, 3, 2, 2, 1, 2],
+                color: () => '#14b8a6',
+                strokeWidth: 2,
+              },
+            ],
+          }}
+          width={Dimensions.get('window').width - 48}
+          height={220}
+          yAxisSuffix={''}
+          yAxisInterval={1}
+          chartConfig={{
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 0,
+            color: () => '#14b8a6',
+            labelColor: () => '#222',
+            propsForLabels: {
+              fontSize: 8,
+              fontWeight: '400',
+            },
+            propsForDots: {
+              r: '4',
+              strokeWidth: '2',
+              stroke: '#fff',
+              fill: '#14b8a6',
+            },
+            propsForBackgroundLines: {
+              stroke: '#e5e7eb',
+            },
+          }}
+          bezier
+          style={{ marginVertical: 8, borderRadius: 12 }}
+          fromZero
+          segments={5}
+          yLabelsOffset={8}
+          xLabelsOffset={-4}
+          withInnerLines
+          withOuterLines
+          withDots
+        />
+        <View style={styles.timeToFindAxisLabels}>
+          <Text style={styles.timeToFindYAxis}>Defects Count</Text>
+          <Text style={styles.timeToFindXAxis}>Time (Day)</Text>
+        </View>
+      </View>
+      {/* Defects by Module Card (now last) */}
+      <View style={styles.fixDefectCard}>
+        <Text style={styles.fixDefectTitle}>Defects by Module</Text>
+        <PieChart
+          data={[
+            { name: 'Configurations', population: 80, color: '#2563eb', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Project Management', population: 49, color: '#10b981', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Bench', population: 56, color: '#facc15', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Defects', population: 60, color: '#ef4444', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Test Cases', population: 54, color: '#a78bfa', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Employee', population: 67, color: '#f472b6', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Releases', population: 35, color: '#fb7185', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Project', population: 22, color: '#f59e42', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Main Template', population: 3, color: '#22d3ee', legendFontColor: '#222', legendFontSize: 15 },
+            { name: 'Dashboard', population: 10, color: '#a3e635', legendFontColor: '#222', legendFontSize: 15 },
+          ]}
+          width={Dimensions.get('window').width - 48}
+          height={260}
+          chartConfig={{
+            color: () => '#222',
+            labelColor: () => '#222',
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 2,
+          }}
+          accessor={'population'}
+          backgroundColor={'transparent'}
+          paddingLeft={'16'}
+          hasLegend={false}
+          absolute
+        />
+        {/* Custom Legend */}
+        <View style={styles.fixDefectLegendBox}>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} /><Text style={styles.legendLabel}>Configurations <Text style={{fontWeight:'bold'}}>80</Text> (18.35%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#10b981' }]} /><Text style={styles.legendLabel}>Project Management <Text style={{fontWeight:'bold'}}>49</Text> (11.24%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#facc15' }]} /><Text style={styles.legendLabel}>Bench <Text style={{fontWeight:'bold'}}>56</Text> (12.84%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendLabel}>Defects <Text style={{fontWeight:'bold'}}>60</Text> (13.76%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#a78bfa' }]} /><Text style={styles.legendLabel}>Test Cases <Text style={{fontWeight:'bold'}}>54</Text> (12.39%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#f472b6' }]} /><Text style={styles.legendLabel}>Employee <Text style={{fontWeight:'bold'}}>67</Text> (15.37%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#fb7185' }]} /><Text style={styles.legendLabel}>Releases <Text style={{fontWeight:'bold'}}>35</Text> (8.03%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#f59e42' }]} /><Text style={styles.legendLabel}>Project <Text style={{fontWeight:'bold'}}>22</Text> (5.05%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#22d3ee' }]} /><Text style={styles.legendLabel}>Main Template <Text style={{fontWeight:'bold'}}>3</Text> (0.69%)</Text></View>
+          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#a3e635' }]} /><Text style={styles.legendLabel}>Dashboard <Text style={{fontWeight:'bold'}}>10</Text> (2.29%)</Text></View>
+        </View>
+      </View>
     </ScrollView>
   );
 };
@@ -198,7 +489,7 @@ const styles = StyleSheet.create({
   },
   gaugeNeedle: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 10,
     left: '50%',
     width: 2,
     height: 38,
@@ -463,6 +754,148 @@ const styles = StyleSheet.create({
     color: '#3730a3',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  legendBox: {
+    marginTop: 12,
+    marginHorizontal: 8,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 10,
+  },
+  legendDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  legendLabel: {
+    fontSize: 15,
+    color: '#222',
+    fontWeight: 'bold',
+  },
+  reopenedCard: {
+    flex: 1,
+    minWidth: 220,
+    maxWidth: 300,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 6,
+    marginBottom: 12,
+    alignItems: 'center',
+    padding: 18,
+    elevation: 2,
+  },
+  reopenedTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#222',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  distributionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    padding: 20,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  distributionTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#222',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  distributionTotalsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 18,
+    paddingHorizontal: 12,
+  },
+  distributionTotalBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  distributionTotalValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  distributionTotalLabel: {
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  timeToFindCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 32,
+    padding: 20,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  timeToFindTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#222',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  timeToFindAxisLabels: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingHorizontal: 8,
+  },
+  timeToFindYAxis: {
+    fontSize: 13,
+    color: '#222',
+    fontWeight: 'bold',
+  },
+  timeToFindXAxis: {
+    fontSize: 13,
+    color: '#222',
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
+  fixDefectCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 32,
+    padding: 20,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  fixDefectTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#222',
+    marginBottom: 12,
+    alignSelf: 'center',
+  },
+  fixDefectLegendBox: {
+    marginTop: 16,
+    marginBottom: 8,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  fixDefectLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    marginLeft: 8,
   },
 });
 

@@ -297,7 +297,7 @@ const ProjectOverviewScreen = () => {
             <View style={styles.gaugeContainer}>
               {/* Simulated Gauge */}
               <View style={styles.gaugeArc}>
-                <View style={[styles.gaugeNeedle, { transform: [{ rotate: '35deg' }] }]} />
+                <View style={[styles.gaugeNeedle, { left: '50%', bottom: 0, marginLeft: -1, transform: [{ rotate: '35deg' }] }]} />
               </View>
               <Text style={styles.metricValueLabel}>
                 Defect Density: <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>11.18</Text>
@@ -658,11 +658,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 90,
     borderTopRightRadius: 90,
     borderWidth: 8,
-    borderColor: '#22c55e',
+    borderColor: '#22c55e', // left (green)
     borderBottomWidth: 0,
-    borderRightColor: '#ef4444',
-    borderLeftColor: '#eab308',
-    borderTopColor: '#22c55e',
+    borderRightColor: '#ef4444', // right (red)
+    borderLeftColor: '#22c55e', // left (green)
+    borderTopColor: '#eab308', // top (yellow)
     backgroundColor: '#fff',
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
   },
   gaugeNeedle: {
     position: 'absolute',
-    bottom: 10,
     left: '50%',
+    bottom: 0,
     width: 2,
     height: 38,
     backgroundColor: '#222',

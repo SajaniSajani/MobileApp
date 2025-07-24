@@ -1,5 +1,6 @@
 import React, { useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { PieChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,82 +34,142 @@ const DashboardScreen = () => {
   const lowRiskCount = PROJECTS.filter(p => p.risk === 'Low').length;
 
   return (
-    <ScrollView style={styles.bg} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Dashboard Overview</Text>
-        <Text style={styles.headerSubtitle}>
-          Gain insights into your projects with real-time health metrics and status summaries
-        </Text>
-        <View style={styles.headerUnderline} />
-      </View>
+    <ImageBackground
+      source={require('../../assets/bg.jpg')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Dashboard Overview</Text>
+          <Text style={styles.headerSubtitle}>
+            Gain insights into your projects with real-time health metrics and status summaries
+          </Text>
+          <View style={styles.headerUnderline} />
+        </View>
 
-      {/* Project Status Insights */}
-      <Text style={styles.sectionTitle}>Project Status Insights</Text>
-      <View style={styles.statusRow}>
-        <View style={[styles.statusCard, { borderColor: '#ef4444' }]}> 
-          <View style={styles.highRiskCircleIcon}>
-            <Text style={styles.highRiskIconText}>!</Text>
-          </View>
-          <Text style={styles.statusCardTitle}>High Risk Projects</Text>
-          <Text style={[styles.statusCount, { color: '#ef4444' }]}>{highRiskCount}</Text>
-          <Text style={styles.statusDesc}>Immediate attention required</Text>
-        </View>
-        <View style={[styles.statusCard, { borderColor: '#facc15' }]}> 
-          <View style={styles.mediumRiskCircleIcon}>
-            <Text style={styles.mediumRiskIconText}>🕒</Text>
-          </View>
-          <Text style={styles.statusCardTitle}>Medium Risk Projects</Text>
-          <Text style={[styles.statusCount, { color: '#facc15' }]}>{mediumRiskCount}</Text>
-          <Text style={styles.statusDesc}>Monitor progress closely</Text>
-        </View>
-        <View style={[styles.statusCard, { borderColor: '#22c55e' }]}> 
-          <View style={styles.lowRiskCircleIcon}>
-             <Text style={styles.lowRiskIconText}>✔</Text> 
-          </View>
-          <Text style={styles.statusCardTitle}>Low Risk Projects</Text>
-          <Text style={[styles.statusCount, { color: '#22c55e' }]}>{lowRiskCount}</Text>
-          <Text style={styles.statusDesc}>Stable and on track</Text>
-        </View>
-      </View>
-
-      {/* All Projects Section */}
-      <Text style={styles.sectionTitle}>All Projects</Text>
-      <View style={styles.filterRow}>
-        {RISK_FILTER_LABELS.map(label => (
-          <TouchableOpacity
-            key={label}
-            style={[styles.filterBtn, selectedFilter === label && styles.filterBtnActive]}
-            onPress={() => setSelectedFilter(label)}
-          >
-            <Text style={[styles.filterBtnText, selectedFilter === label && styles.filterBtnTextActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.projectsRow}>
-        {getFilteredProjects().map((project, idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={[styles.projectCard, { backgroundColor: RISK_COLORS[project.risk as keyof typeof RISK_COLORS] }]}
-            onPress={() => navigation.navigate('ProjectOverview', { name: project.name, risk: project.risk })}
-          >
-            {/* <Text style={styles.projectIcon}>✔</Text> */}
-            <Text style={styles.projectName}>{project.name}</Text>
-            <View style={styles.projectRiskLabelBox}>
-              <Text style={styles.projectRiskLabel}>{project.risk} Risk</Text>
+        {/* Project Status Insights */}
+        <Text style={styles.sectionTitle}>Project Status Insights</Text>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusCard, { borderColor: '#ef4444' }]}> 
+            <View style={styles.highRiskCircleIcon}>
+              <Feather name="alert-triangle" size={28} color="#fff" />
             </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <Text style={styles.statusCardTitle}>High Risk Projects</Text>
+            <Text style={[styles.statusCount, { color: '#ef4444' }]}>{highRiskCount}</Text>
+            <Text style={styles.statusDesc}>Immediate attention required</Text>
+          </View>
+          <View style={[styles.statusCard, { borderColor: '#facc15' }]}> 
+            <View style={styles.mediumRiskCircleIcon}>
+              <Feather name="clock" size={28} color="#fff" />
+            </View>
+            <Text style={styles.statusCardTitle}>Medium Risk Projects</Text>
+            <Text style={[styles.statusCount, { color: '#facc15' }]}>{mediumRiskCount}</Text>
+            <Text style={styles.statusDesc}>Monitor progress closely</Text>
+          </View>
+          <View style={[styles.statusCard, { borderColor: '#22c55e' }]}> 
+            <View style={styles.lowRiskCircleIcon}>
+              <Feather name="check-circle" size={28} color="#fff" />
+            </View>
+            <Text style={styles.statusCardTitle}>Low Risk Projects</Text>
+            <Text style={[styles.statusCount, { color: '#22c55e' }]}>{lowRiskCount}</Text>
+            <Text style={styles.statusDesc}>Stable and on track</Text>
+          </View>
+        </View>
 
-      {/* Defects Reopened Multiple Times Pie Chart Card */}
+        {/* All Projects Section */}
+        <Text style={styles.sectionTitle}>All Projects</Text>
+        <View style={styles.filterCard}>
+          <View style={styles.filterRow}>
+            {RISK_FILTER_LABELS.map(label => {
+              let btnColor = '#6366f1';
+              let textColor = '#fff';
+              if (selectedFilter === label) {
+                if (label === 'High Risk') {
+                  btnColor = '#ef4444';
+                  textColor = '#fff';
+                } else if (label === 'Medium Risk') {
+                  btnColor = '#facc15';
+                  textColor = '#fff';
+                } else if (label === 'Low Risk') {
+                  btnColor = '#22c55e';
+                  textColor = '#fff';
+                } else {
+                  btnColor = '#6366f1';
+                  textColor = '#fff';
+                }
+              } else {
+                btnColor = '#f1f5f9';
+                if (label === 'High Risk') textColor = '#ef4444';
+                else if (label === 'Medium Risk') textColor = '#facc15';
+                else if (label === 'Low Risk') textColor = '#22c55e';
+                else textColor = '#222';
+              }
+              return (
+                <TouchableOpacity
+                  key={label}
+                  style={[styles.filterBtn, { backgroundColor: btnColor }]}
+                  onPress={() => setSelectedFilter(label)}
+                >
+                  <Text style={[styles.filterBtnText, { color: textColor }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
 
-  // ...existing code...
-    </ScrollView>
+        <View style={styles.projectsCard}>
+          <View style={styles.projectsRow}>
+            {getFilteredProjects().map((project, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={[
+                  styles.projectCard,
+                  { backgroundColor: RISK_COLORS[project.risk as keyof typeof RISK_COLORS] },
+                  // Add marginRight for left card, marginLeft for right card
+                  (idx % 2 === 0)
+                    ? { marginRight: 12, marginLeft: 0 }
+                    : { marginLeft: 12, marginRight: 0 }
+                ]}
+                onPress={() => navigation.navigate('ProjectOverview', { name: project.name, risk: project.risk })}
+              >
+                <Text style={styles.projectName}>{project.name}</Text>
+                <View style={styles.projectRiskLabelBox}>
+                  <Text style={styles.projectRiskLabel}>{project.risk} Risk</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+
+        {/* Defects Reopened Multiple Times Pie Chart Card */}
+
+    // ...existing code...
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  filterCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    alignItems: 'center',
+    borderWidth:2 ,
+    borderColor:'#0965efff',
+  },
   bg: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -214,13 +275,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     marginTop: 8,
-    marginHorizontal: 8,
+    marginHorizontal: 0,
   },
   projectCard: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    margin: 10,
+    width: Dimensions.get('window').width / 2.5,
+    height: Dimensions.get('window').width / 2.5,
+    borderRadius: Dimensions.get('window').width / 5,
+    marginBottom: 20,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
@@ -228,6 +289,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+    backgroundColor: '#fff',
   },
   projectIcon: {
     fontSize: 32,
@@ -341,6 +403,22 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontSize: 15,
     color: '#222',
+  },
+  projectsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    alignItems: 'center',
+    
   },
 });
 

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../../App';
+import { useNavigation } from '@react-navigation/native';
 import { 
   PROJECTS, 
   DEFECT_DATA, 
@@ -11,15 +10,123 @@ import {
   RISK_LABELS 
 } from '../data/projectsData';
 import { PieChart, LineChart } from 'react-native-chart-kit';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 
 // Add type for DEFECT_DATA keys
 type DefectDataKey = keyof typeof DEFECT_DATA;
 
-type ProjectOverviewRouteProp = RouteProp<RootStackParamList, 'ProjectOverview'>;
+// Custom Speedometer Component
+interface SpeedometerProps {
+  value: number;
+  size?: number;
+  minValue?: number;
+  maxValue?: number;
+}
+
+const CustomSpeedometer = ({ value, size = 200, minValue = 0, maxValue = 50 }: SpeedometerProps) => {
+  const radius = size / 2 - 20;
+  const centerX = size / 2;
+  const centerY = size / 2;
+
+  // Calculate angle for the needle based on value ranges (0-7, 7-10, 10+)
+  let needleAngle;
+  if (value <= 7) {
+    // Green zone: 0-7 maps to 180-270 degrees (90 degrees total)
+    const greenPercentage = value / 7;
+    needleAngle = 180 + (greenPercentage * 90);
+  } else if (value <= 10) {
+    // Yellow zone: 7-10 maps to 270-306 degrees (36 degrees total)
+    const yellowPercentage = (value - 7) / 3;
+    needleAngle = 270 + (yellowPercentage * 36);
+  } else {
+    // Red zone: 10+ maps to 306-360 degrees (54 degrees total)
+    const redPercentage = Math.min((value - 10) / 40, 1); // Cap at 50 total
+    needleAngle = 306 + (redPercentage * 54);
+  }
+
+  // Convert angle to radians for needle position
+  const needleRadians = (needleAngle * Math.PI) / 180;
+  const needleLength = radius - 10;
+  const needleX = centerX + Math.cos(needleRadians) * needleLength;
+  const needleY = centerY + Math.sin(needleRadians) * needleLength;
+
+  // Create arc paths for different color segments (full circle support)
+  const createArcPath = (startAngle: number, endAngle: number, radius: number) => {
+    const start = (startAngle * Math.PI) / 180;
+    const end = (endAngle * Math.PI) / 180;
+    const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
+
+    const x1 = centerX + Math.cos(start) * radius;
+    const y1 = centerY + Math.sin(start) * radius;
+    const x2 = centerX + Math.cos(end) * radius;
+    const y2 = centerY + Math.sin(end) * radius;
+
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
+  };
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size / 2 + 40} viewBox={`0 0 ${size} ${size / 2 + 40}`}>
+        {/* Green segment (0-7) - Takes up ~50% of the arc */}
+        <Path
+          d={createArcPath(180, 270, radius)}
+          stroke="#00ff6b"
+          strokeWidth="20"
+          fill="none"
+          strokeLinecap="butt"
+        />
+
+        {/* Yellow segment (7-10) - Takes up ~20% of the arc */}
+        <Path
+          d={createArcPath(270, 306, radius)}
+          stroke="#f4ab44"
+          strokeWidth="20"
+          fill="none"
+          strokeLinecap="butt"
+        />
+
+        {/* Red segment (10+) - Takes up ~30% of the arc */}
+        <Path
+          d={createArcPath(306, 360, radius)}
+          stroke="#ff2900"
+          strokeWidth="20"
+          fill="none"
+          strokeLinecap="butt"
+        />
+
+        {/* Needle */}
+        <Line
+          x1={centerX}
+          y1={centerY}
+          x2={needleX}
+          y2={needleY}
+          stroke="#0066cc"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+
+        {/* Center circle */}
+        <Circle
+          cx={centerX}
+          cy={centerY}
+          r="8"
+          fill="#333"
+          stroke="#0066cc"
+          strokeWidth="2"
+        />
+      </Svg>
+
+      {/* Value display below the horizontal semi-circle */}
+      <View style={{ alignItems: 'center', marginTop: 20 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>{value}</Text>
+        <Text style={{ fontSize: 12, color: '#666' }}>Defects per KLOC</Text>
+      </View>
+    </View>
+  );
+};
 
 const ProjectOverviewScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute<ProjectOverviewRouteProp>();
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
   const [showHighStatusModal, setShowHighStatusModal] = useState(false);
   const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
@@ -122,6 +229,35 @@ const ProjectOverviewScreen = () => {
             )}
           </View>
         ))}
+      </View>
+
+      {/* Defect Density Card */}
+      <Text style={styles.sectionTitle}>Defect Density Analysis</Text>
+      <View style={styles.densityCard}>
+        <Text style={styles.densityCardTitle}>Project Defect Density</Text>
+        <View style={styles.speedometerContainer}>
+          <View style={styles.speedometer}>
+            <CustomSpeedometer
+              value={project.defectDensity || 15}
+              size={200}
+              minValue={0}
+              maxValue={50}
+            />
+          </View>
+          
+        </View>
+        <View style={styles.densityMetrics}>
+          <View style={styles.densityMetric}>
+            <Text style={styles.metricValue}>{project.totalDefects || 45}</Text>
+            <Text style={styles.metricLabel}>Total Defects</Text>
+          </View>
+          <View style={styles.densityMetric}>
+            <Text style={styles.metricValue}>{project.linesOfCode ? (project.linesOfCode / 1000).toFixed(1) + 'K' : '3.0K'}</Text>
+            <Text style={styles.metricLabel}>Lines of Code</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Modal for Medium Status Breakdown Pie Chart */}
       <Modal
         visible={showMediumStatusModal}
@@ -288,8 +424,8 @@ const ProjectOverviewScreen = () => {
           </View>
         </View>
       </Modal>
-      </View>
-        {/* Defect Metrics Cards (Image-like) */}
+
+      {/* Defect Metrics Cards (Image-like) */}
         <View style={styles.metricsRow}>
           {/* Defect Density Card */}
           <View style={styles.metricCard}>
@@ -1078,6 +1214,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
     marginLeft: 8,
+  },
+  // Speedometer styles
+  densityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    alignItems: 'center',
+  },
+  densityCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  speedometerContainer: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  speedometer: {
+    marginBottom: 8,
+  },
+  speedometerWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedometerCenter: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -30 }, { translateY: -25 }],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedometerValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'center',
+  },
+  speedometerUnit: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  densityInfo: {
+    alignItems: 'center',
+    marginTop: -20,
+  },
+  densityValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  densityLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  densityMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  densityMetric: {
+    alignItems: 'center',
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 

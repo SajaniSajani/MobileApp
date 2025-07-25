@@ -1,13 +1,13 @@
 export const PROJECTS = [
-  { name: 'Defect Tracker', risk: 'High' },
-  { name: 'QA testing', risk: 'High' },
-  { name: 'project 1', risk: 'Low' },
-  { name: 'Heart', risk: 'Low' },
-  { name: 'Dashbord testing', risk: 'Medium' },
-  { name: 'JALI', risk: 'Low' },
-  { name: 'Hello world', risk: 'Medium' },
-  { name: 'dashboard test', risk: 'High' },
-  { name: 'Defect Tracker 2', risk: 'Low' },
+  { name: 'Defect Tracker', risk: 'High', defectDensity: 25, totalDefects: 445, linesOfCode: 18000 },
+  { name: 'QA testing', risk: 'High', defectDensity: 22, totalDefects: 132, linesOfCode: 6000 },
+  { name: 'project 1', risk: 'Low', defectDensity: 8, totalDefects: 24, linesOfCode: 3000 },
+  { name: 'Heart', risk: 'Low', defectDensity: 5, totalDefects: 15, linesOfCode: 3000 },
+  { name: 'Dashbord testing', risk: 'Medium', defectDensity: 15, totalDefects: 75, linesOfCode: 5000 },
+  { name: 'JALI', risk: 'Low', defectDensity: 6, totalDefects: 18, linesOfCode: 3000 },
+  { name: 'Hello world', risk: 'Medium', defectDensity: 12, totalDefects: 36, linesOfCode: 3000 },
+  { name: 'dashboard test', risk: 'High', defectDensity: 28, totalDefects: 168, linesOfCode: 6000 },
+  { name: 'Defect Tracker 2', risk: 'Low', defectDensity: 7, totalDefects: 21, linesOfCode: 3000 },
 ];
 
 export const DEFECT_DATA = {

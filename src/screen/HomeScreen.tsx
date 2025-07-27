@@ -12,7 +12,7 @@ type RootStackParamList = {
 const HomeScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   return (
-    <ImageBackground source={require('../../assets/bug1.jpg')} style={styles.background} resizeMode="cover">
+    <ImageBackground source={require('../../assets/background.jpg')} style={styles.background} resizeMode="cover">
       <View style={styles.overlay}>
         <Text style={styles.title}>Welcome Defect Tracker</Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>

@@ -144,7 +144,7 @@ const ProjectOverviewScreen = () => {
       {/* Back Button */}
       <View style={styles.topRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>{'< Back'}</Text>
+          <Text style={styles.backBtnText}>{'Back'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -427,19 +427,7 @@ const ProjectOverviewScreen = () => {
 
       {/* Defect Metrics Cards (Image-like) */}
         <View style={styles.metricsRow}>
-          {/* Defect Density Card */}
-          <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>Defect Density</Text>
-            <View style={styles.gaugeContainer}>
-              {/* Simulated Gauge */}
-              <View style={styles.gaugeArc}>
-                <View style={[styles.gaugeNeedle, { left: '50%', bottom: 0, marginLeft: -1, transform: [{ rotate: '35deg' }] }]} />
-              </View>
-              <Text style={styles.metricValueLabel}>
-                Defect Density: <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>11.18</Text>
-              </Text>
-            </View>
-          </View>
+
           {/* Defect Severity Index Card */}
           <View style={styles.metricCard}>
             <Text style={styles.metricTitle}>Defect Severity Index</Text>
@@ -909,7 +897,7 @@ const styles = StyleSheet.create({
   },
   topRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     padding: 16,
   },
   backBtn: {

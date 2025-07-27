@@ -81,7 +81,11 @@ const DashboardScreen = () => {
         {/* All Projects Section */}
         <Text style={styles.sectionTitle}>All Projects</Text>
         <View style={styles.filterCard}>
-          <View style={styles.filterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScrollContainer}
+          >
             {RISK_FILTER_LABELS.map(label => {
               let btnColor = '#6366f1';
               let textColor = '#fff';
@@ -116,7 +120,7 @@ const DashboardScreen = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
         <View style={styles.projectsCard}>
@@ -245,6 +249,12 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  filterScrollContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -256,8 +266,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginHorizontal: 4,
-    marginBottom: 4,
+    marginHorizontal: 6,
+    marginVertical: 4,
+    minWidth: 100,
+    alignItems: 'center',
   },
   filterBtnActive: {
     backgroundColor: '#6366f1',

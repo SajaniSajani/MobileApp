@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import { PieChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
@@ -11,12 +11,19 @@ const DashboardScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState('All Projects');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const [showNotifications, setShowNotifications] = useState(false);
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitle: 'Back',
       headerRight: () => (
-        <TouchableOpacity style={{ marginRight: 12, backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
-          <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={{ marginRight: 16 }} onPress={() => setShowNotifications(true)}>
+            <Feather name="bell" size={24} color="#2563eb" />
+          </TouchableOpacity>
+          <TouchableOpacity style={{ backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
+            <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       ),
     });
   }, [navigation]);
@@ -34,11 +41,46 @@ const DashboardScreen = () => {
   const lowRiskCount = PROJECTS.filter(p => p.risk === 'Low').length;
 
   return (
-    <ImageBackground
-      source={require('../../assets/bg.jpg')}
-      style={styles.bg}
-      resizeMode="cover"
-    >
+    <View style={styles.bg}>
+      {/* Notification Popup */}
+      {showNotifications && (
+        <View style={styles.notificationsOverlay}>
+          <View style={styles.notificationsModal}>
+            <View style={styles.notificationsHeader}>
+              <Text style={styles.notificationsTitle}>Notifications</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <Text style={styles.notificationsClose}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.notificationsList}>
+              <View style={styles.notificationItem}>
+                <Feather name="alert-circle" size={20} color="#ef4444" style={{ marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.notificationTitleHigh}>High Priority Defect</Text>
+                  <Text style={styles.notificationDesc}>Critical bug found in authentication module</Text>
+                  <Text style={styles.notificationTime}>7m ago</Text>
+                </View>
+              </View>
+              <View style={styles.notificationItem}>
+                <Feather name="check-circle" size={20} color="#22c55e" style={{ marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.notificationTitleFixed}>Defect Fixed</Text>
+                  <Text style={styles.notificationDesc}>UI alignment issue has been resolved</Text>
+                  <Text style={styles.notificationTime}>32m ago</Text>
+                </View>
+              </View>
+              <View style={styles.notificationItem}>
+                <Feather name="alert-triangle" size={20} color="#facc15" style={{ marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.notificationTitleCodeReview}>Code Review Required</Text>
+                  <Text style={styles.notificationDesc}>New defect fixes need review in Dashboard module</Text>
+                  <Text style={styles.notificationTime}>2h ago</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Header */}
         <View style={styles.headerContainer}>
@@ -152,7 +194,7 @@ const DashboardScreen = () => {
 
     // ...existing code...
       </ScrollView>
-    </ImageBackground>
+    </View>
   );
 };
 
@@ -430,7 +472,88 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     alignItems: 'center',
-    
+  },
+  notificationsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99,
+  },
+  notificationsModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    minWidth: 320,
+    maxWidth: 340,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+  },
+  notificationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  notificationsTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  notificationsClose: {
+    fontSize: 28,
+    color: '#888',
+    marginLeft: 12,
+    fontWeight: 'bold',
+  },
+  notificationsList: {
+    marginTop: 4,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+  },
+  notificationTitleHigh: {
+    fontWeight: 'bold',
+    color: '#ef4444',
+    fontSize: 16,
+  },
+  notificationTitleFixed: {
+    fontWeight: 'bold',
+    color: '#22c55e',
+    fontSize: 16,
+  },
+  notificationTitleCodeReview: {
+    fontWeight: 'bold',
+    color: '#facc15',
+    fontSize: 16,
+  },
+  notificationDesc: {
+    color: '#222',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  notificationTime: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
 });
 

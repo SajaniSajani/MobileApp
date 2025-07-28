@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Feather from 'react-native-vector-icons/Feather';
 import { 
   PROJECTS, 
   DEFECT_DATA, 
@@ -127,6 +128,22 @@ const CustomSpeedometer = ({ value, size = 200, minValue = 0, maxValue = 50 }: S
 
 const ProjectOverviewScreen = () => {
   const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Back',
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={{ marginRight: 16 }} onPress={() => {/* handle notification press */}}>
+            <Feather name="bell" size={24} color="#2563eb" />
+          </TouchableOpacity>
+          <TouchableOpacity style={{ backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
+            <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation]);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
   const [showHighStatusModal, setShowHighStatusModal] = useState(false);
   const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
@@ -141,12 +158,6 @@ const ProjectOverviewScreen = () => {
 
   return (
     <ScrollView style={styles.bg} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* Back Button */}
-      <View style={styles.topRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>{'Back'}</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Time to Fix Defects Card (at the end) */}
       {/* ...existing code... */}
@@ -266,7 +277,7 @@ const ProjectOverviewScreen = () => {
         onRequestClose={() => setShowMediumStatusModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, minWidth: 240, maxWidth: 280, alignItems: 'center', elevation: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
               <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for Medium</Text>
               <TouchableOpacity onPress={() => setShowMediumStatusModal(false)}>
@@ -322,7 +333,7 @@ const ProjectOverviewScreen = () => {
         onRequestClose={() => setShowLowStatusModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, minWidth: 240, maxWidth: 280, alignItems: 'center', elevation: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
               <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for Low</Text>
               <TouchableOpacity onPress={() => setShowLowStatusModal(false)}>
@@ -377,7 +388,7 @@ const ProjectOverviewScreen = () => {
         onRequestClose={() => setShowHighStatusModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 340, alignItems: 'center', elevation: 6 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, minWidth: 240, maxWidth: 280, alignItems: 'center', elevation: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
               <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#222' }}>Status Breakdown for High</Text>
               <TouchableOpacity onPress={() => setShowHighStatusModal(false)}>
@@ -917,6 +928,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
+    marginTop: 24,
     padding: 16,
     elevation: 2,
   },

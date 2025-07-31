@@ -41,4 +41,4 @@ export const RISK_LABELS = {
   Low: 'Low Risk',
 };
 
-export const RISK_FILTER_LABELS = ['All Projects', 'High Risk', 'Medium Risk', 'Low Risk']; 
+export const RISK_FILTER_LABELS = ['All', 'High Risk', 'Medium Risk', 'Low Risk']; 

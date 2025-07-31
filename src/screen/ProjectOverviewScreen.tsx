@@ -2,7 +2,7 @@ import React, { useState, useLayoutEffect } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
+import Feather from '@react-native-vector-icons/feather';
 import { 
   PROJECTS, 
   DEFECT_DATA, 
@@ -131,11 +131,13 @@ const ProjectOverviewScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: 'Back',
+       headerTitle: () => (
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#222',marginLeft: -25 }}>Back</Text>
+            ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity style={{ marginRight: 16 }} onPress={() => {/* handle notification press */}}>
-            <Feather name="bell" size={24} color="#2563eb" />
+            <Feather name="bell" size={20} color="#2563eb" />
           </TouchableOpacity>
           <TouchableOpacity style={{ backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
             <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>

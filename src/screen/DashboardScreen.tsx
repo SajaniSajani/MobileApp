@@ -1,6 +1,7 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import Feather from 'react-native-vector-icons/Feather';
+import Feather from '@react-native-vector-icons/feather';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { PieChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,11 +15,15 @@ const DashboardScreen = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: 'Back',
+          headerTitle: () => (
+            
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#222',marginLeft: -25 }}>Back</Text>
+          ),
+
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity style={{ marginRight: 16 }} onPress={() => setShowNotifications(true)}>
-            <Feather name="bell" size={24} color="#2563eb" />
+            <Feather name="bell" size={20} color="#2563eb" />
           </TouchableOpacity>
           <TouchableOpacity style={{ backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }} onPress={() => navigation.navigate('Login')}>
             <Text style={{ color: '#2563eb', fontWeight: 'bold', fontSize: 16 }}>Logout</Text>
@@ -126,7 +131,7 @@ const DashboardScreen = () => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScrollContainer}
+            // contentContainerStyle={styles.filterScrollContainer}
           >
             {RISK_FILTER_LABELS.map(label => {
               let btnColor = '#6366f1';
@@ -200,21 +205,16 @@ const DashboardScreen = () => {
 
 const styles = StyleSheet.create({
   filterCard: {
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    // marginHorizontal: 16,
+    // marginTop: 8,
+    // marginBottom: 8,
+   
     alignItems: 'center',
-    borderWidth:2 ,
-    borderColor:'#0965efff',
+   
   },
   bg: {
     flex: 1,
@@ -291,26 +291,25 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  filterScrollContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 12,
-    flexWrap: 'wrap',
-  },
+  // filterScrollContainer: {
+  //   flexDirection: 'row',
+  //   paddingHorizontal: 2,
+  //   paddingVertical: 12,
+  //   alignItems: 'center',
+  // },
+  // filterRow: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'center',
+  //   marginVertical: 12,
+  //   flexWrap: 'wrap',
+  // },
   filterBtn: {
     backgroundColor: '#f1f5f9',
     borderRadius: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingVertical: 8,
-    marginHorizontal: 6,
-    marginVertical: 4,
-    minWidth: 100,
+    marginHorizontal: 2,
+    minWidth: 75,
     alignItems: 'center',
   },
   filterBtnActive: {
@@ -319,7 +318,7 @@ const styles = StyleSheet.create({
   filterBtnText: {
     color: '#222',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 12,
   },
   filterBtnTextActive: {
     color: '#fff',
@@ -459,18 +458,18 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   projectsCard: {
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 8,
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    // elevation: 2,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.08,
+    // shadowRadius: 8,
     alignItems: 'center',
   },
   notificationsOverlay: {

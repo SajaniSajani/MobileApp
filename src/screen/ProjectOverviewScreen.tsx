@@ -1,6 +1,6 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { Modal } from 'react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 import { 
@@ -10,6 +10,7 @@ import {
   RISK_COLORS, 
   RISK_LABELS 
 } from '../data/projectsData';
+import { projectAPI, UIProject } from '../service/api';
 import { PieChart, LineChart } from 'react-native-chart-kit';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 
@@ -128,6 +129,9 @@ const CustomSpeedometer = ({ value, size = 200, minValue = 0, maxValue = 50 }: S
 
 const ProjectOverviewScreen = () => {
   const navigation = useNavigation();
+  const [apiProjects, setApiProjects] = useState<UIProject[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -146,16 +150,41 @@ const ProjectOverviewScreen = () => {
       ),
     });
   }, [navigation]);
+
+  // Fetch projects from API
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedProjects = await projectAPI.getProjects();
+      setApiProjects(fetchedProjects);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects';
+      setError(errorMessage);
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch projects on component mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // Use API data when available, fallback to static data
+  const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
+
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
   const [showHighStatusModal, setShowHighStatusModal] = useState(false);
   const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
   const [showLowStatusModal, setShowLowStatusModal] = useState(false);
-  const project = PROJECTS[selectedProjectIdx] || PROJECTS[0];
+  const project = projectsToUse[selectedProjectIdx] || projectsToUse[0];
   const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
   const scrollToProject = (dir: 'left' | 'right') => {
     if (dir === 'left' && selectedProjectIdx > 0) setSelectedProjectIdx(selectedProjectIdx - 1);
-    if (dir === 'right' && selectedProjectIdx < PROJECTS.length - 1) setSelectedProjectIdx(selectedProjectIdx + 1);
+    if (dir === 'right' && selectedProjectIdx < projectsToUse.length - 1) setSelectedProjectIdx(selectedProjectIdx + 1);
   };
 
   return (
@@ -163,9 +192,38 @@ const ProjectOverviewScreen = () => {
 
       {/* Time to Fix Defects Card (at the end) */}
       {/* ...existing code... */}
+      {/* API Status Indicator */}
+      {/* {apiProjects.length > 0 && (
+        <View style={styles.apiStatusCard}> */}
+          {/* <Text style={styles.apiStatusText}>
+            📊 Live API Data ({apiProjects.length} projects)
+          </Text> */}
+        {/* </View>
+      )} */}
+
+      {/* Loading State */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading projects from API...</Text>
+        </View>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchProjects}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Project Selection */}
       <View style={styles.projectSelectorBox}>
-        <Text style={styles.projectSelectorLabel}>Project Selection</Text>
+        <Text style={styles.projectSelectorLabel}>
+          Project Selection
+          {loading && <Text style={styles.loadingIndicator}> (Loading...)</Text>}
+        </Text>
         <View style={styles.projectSelectorRow}>
           <TouchableOpacity
             style={styles.arrowBtn}
@@ -175,7 +233,7 @@ const ProjectOverviewScreen = () => {
             <Text style={[styles.arrowText, selectedProjectIdx === 0 && { opacity: 0.3 }]}>{'<'}</Text>
           </TouchableOpacity>
           <FlatList
-            data={PROJECTS}
+            data={projectsToUse}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={item => item.name}
@@ -194,9 +252,9 @@ const ProjectOverviewScreen = () => {
           <TouchableOpacity
             style={styles.arrowBtn}
             onPress={() => scrollToProject('right')}
-            disabled={selectedProjectIdx === PROJECTS.length - 1}
+            disabled={selectedProjectIdx === projectsToUse.length - 1}
           >
-            <Text style={[styles.arrowText, selectedProjectIdx === PROJECTS.length - 1 && { opacity: 0.3 }]}>{'>'}</Text>
+            <Text style={[styles.arrowText, selectedProjectIdx === projectsToUse.length - 1 && { opacity: 0.3 }]}>{'>'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1306,6 +1364,63 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
     textAlign: 'center',
+  },
+  apiStatusCard: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  apiStatusText: {
+    color: '#0284c7',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loadingIndicator: {
+    color: '#666',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,5 +1,5 @@
-import React, { useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { PieChart } from 'react-native-chart-kit';
@@ -7,10 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 import { PROJECTS, RISK_COLORS, RISK_FILTER_LABELS } from '../data/projectsData';
+import { projectAPI, UIProject } from '../service/api';
 
 const DashboardScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState('All Projects');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [apiProjects, setApiProjects] = useState<UIProject[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
   useLayoutEffect(() => {
@@ -33,17 +37,41 @@ const DashboardScreen = () => {
     });
   }, [navigation]);
 
-  const getFilteredProjects = () => {
-    if (selectedFilter === 'All Projects') return PROJECTS;
-    if (selectedFilter === 'High Risk') return PROJECTS.filter(p => p.risk === 'High');
-    if (selectedFilter === 'Medium Risk') return PROJECTS.filter(p => p.risk === 'Medium');
-    if (selectedFilter === 'Low Risk') return PROJECTS.filter(p => p.risk === 'Low');
-    return PROJECTS;
+  // Fetch projects from API
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedProjects = await projectAPI.getProjects();
+      setApiProjects(fetchedProjects);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects';
+      setError(errorMessage);
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const highRiskCount = PROJECTS.filter(p => p.risk === 'High').length;
-  const mediumRiskCount = PROJECTS.filter(p => p.risk === 'Medium').length;
-  const lowRiskCount = PROJECTS.filter(p => p.risk === 'Low').length;
+  // Fetch projects on component mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // Use API data when available, fallback to static data
+  const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
+
+  const getFilteredProjects = () => {
+    if (selectedFilter === 'All Projects') return projectsToUse;
+    if (selectedFilter === 'High Risk') return projectsToUse.filter(p => p.risk === 'High');
+    if (selectedFilter === 'Medium Risk') return projectsToUse.filter(p => p.risk === 'Medium');
+    if (selectedFilter === 'Low Risk') return projectsToUse.filter(p => p.risk === 'Low');
+    return projectsToUse;
+  };
+
+  const highRiskCount = projectsToUse.filter(p => p.risk === 'High').length;
+  const mediumRiskCount = projectsToUse.filter(p => p.risk === 'Medium').length;
+  const lowRiskCount = projectsToUse.filter(p => p.risk === 'Low').length;
 
   return (
     <View style={styles.bg}>
@@ -96,6 +124,15 @@ const DashboardScreen = () => {
           <View style={styles.headerUnderline} />
         </View>
 
+        {/* Data Source Indicator */}
+        {/* {apiProjects.length > 0 && (
+          <View style={styles.dataSourceIndicator}>
+            <Text style={styles.dataSourceText}>
+              📊 Live API Data ({apiProjects.length} projects)
+            </Text>
+          </View>
+        )} */}
+
         {/* Project Status Insights */}
         <Text style={styles.sectionTitle}>Project Status Insights</Text>
         <View style={styles.statusRow}>
@@ -104,7 +141,9 @@ const DashboardScreen = () => {
               <Feather name="alert-triangle" size={28} color="#fff" />
             </View>
             <Text style={styles.statusCardTitle}>High Risk Projects</Text>
-            <Text style={[styles.statusCount, { color: '#ef4444' }]}>{highRiskCount}</Text>
+            <Text style={[styles.statusCount, { color: '#ef4444' }]}>
+              {loading ? '...' : highRiskCount}
+            </Text>
             <Text style={styles.statusDesc}>Immediate attention required</Text>
           </View>
           <View style={[styles.statusCard, { borderColor: '#facc15' }]}> 
@@ -112,7 +151,9 @@ const DashboardScreen = () => {
               <Feather name="clock" size={28} color="#fff" />
             </View>
             <Text style={styles.statusCardTitle}>Medium Risk Projects</Text>
-            <Text style={[styles.statusCount, { color: '#facc15' }]}>{mediumRiskCount}</Text>
+            <Text style={[styles.statusCount, { color: '#facc15' }]}>
+              {loading ? '...' : mediumRiskCount}
+            </Text>
             <Text style={styles.statusDesc}>Monitor progress closely</Text>
           </View>
           <View style={[styles.statusCard, { borderColor: '#22c55e' }]}> 
@@ -120,13 +161,40 @@ const DashboardScreen = () => {
               <Feather name="check-circle" size={28} color="#fff" />
             </View>
             <Text style={styles.statusCardTitle}>Low Risk Projects</Text>
-            <Text style={[styles.statusCount, { color: '#22c55e' }]}>{lowRiskCount}</Text>
+            <Text style={[styles.statusCount, { color: '#22c55e' }]}>
+              {loading ? '...' : lowRiskCount}
+            </Text>
             <Text style={styles.statusDesc}>Stable and on track</Text>
           </View>
         </View>
 
         {/* All Projects Section */}
         <Text style={styles.sectionTitle}>All Projects</Text>
+        
+        {/* Loading State */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading projects from API...</Text>
+          </View>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Error: {error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchProjects}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && projectsToUse.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No projects available</Text>
+          </View>
+        )}
+        
         <View style={styles.filterCard}>
           <ScrollView
             horizontal
@@ -553,6 +621,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     fontStyle: 'italic',
+  },
+  dataSourceIndicator: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  dataSourceText: {
+    color: '#0284c7',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

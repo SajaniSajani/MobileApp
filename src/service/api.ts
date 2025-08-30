@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // API base configuration
-const API_BASE_URL = 'http://192.168.1.7:3000';
+const API_BASE_URL = 'http://192.168.8.101:3000';
 
 // Project interface based on the actual API response structure
 export interface Project {
@@ -51,6 +51,44 @@ export interface ApiError {
 
 // Project API class
 class ProjectAPI {
+  /**
+   * Fetch Defect to Remark Ratio for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ ratio: number; status: string; defects: number; remarks: number }>
+   */
+  async getRemarkRatio(projectId: string): Promise<{ ratio: number; status: string; defects: number; remarks: number }> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ ratio: number; status: string; defects: number; remarks: number }>> = await axios.get(
+        `${this.baseURL}/api/dashboard/remark-ratio/${projectId}`,
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }
+      );
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch remark ratio');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
   private baseURL: string;
 
   constructor(baseURL: string = API_BASE_URL) {

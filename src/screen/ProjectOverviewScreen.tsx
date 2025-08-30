@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 import { 
   PROJECTS, 
@@ -127,11 +127,20 @@ const CustomSpeedometer = ({ value, size = 200, minValue = 0, maxValue = 50 }: S
   );
 };
 
+// If you have a RootStackParamList, import and use it here. Otherwise, fallback to any.
+// import { RootStackParamList } from '../navigation/types';
+// Move useNavigation inside the component to avoid invalid hook call
 const ProjectOverviewScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [apiProjects, setApiProjects] = useState<UIProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remarkLoading, setRemarkLoading] = useState(false);
+  const [remarkError, setRemarkError] = useState<string | null>(null);
+  const [remarkRatio, setRemarkRatio] = useState<number | null>(null);
+  const [remarkStatus, setRemarkStatus] = useState<string>('');
+  const [defectCount, setDefectCount] = useState<number | null>(null);
+  const [remarkCount, setRemarkCount] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -179,7 +188,10 @@ const ProjectOverviewScreen = () => {
   const [showHighStatusModal, setShowHighStatusModal] = useState(false);
   const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
   const [showLowStatusModal, setShowLowStatusModal] = useState(false);
-  const project = projectsToUse[selectedProjectIdx] || projectsToUse[0];
+  // Add fallback id for static projects (use name as id)
+  const project = projectsToUse[selectedProjectIdx]
+    ? { ...projectsToUse[selectedProjectIdx], id: (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name }
+    : { ...projectsToUse[0], id: (projectsToUse[0] as any).id || projectsToUse[0].name };
   const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
   const scrollToProject = (dir: 'left' | 'right') => {
@@ -510,68 +522,62 @@ const ProjectOverviewScreen = () => {
             </View>
             <Text style={styles.metricDesc}>Weighted severity score (higher = more severe defects)</Text>
           </View>
-          {/* Defect to Remark Ratio Card */}
-          <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>Defect to Remark Ratio</Text>
-            <View style={styles.ratioCardBox}>
-              <Text style={styles.ratioValue}>3:1</Text>
-              <Text style={styles.ratioLabel}>Defects per Remark</Text>
-              <View style={styles.ratioCriticalBox}>
-                <Text style={styles.ratioCriticalText}>Critical</Text>
-              </View>
-              <View style={styles.ratioBarBg}>
-                <View style={styles.ratioBarFill} />
-              </View>
+          {/* Defect to Remark Ratio Card (API integrated) */}
+          <View style={{ backgroundColor: '#fef9c3', borderRadius: 16, padding: 18, marginVertical: 8, marginHorizontal: 0, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>Defect to Remark Ratio</Text>
+              <TouchableOpacity onPress={() => {
+                if (project?.id) {
+                  setRemarkLoading(true);
+                  setRemarkError(null);
+                  setRemarkRatio(null);
+                  setRemarkStatus('');
+                  setDefectCount(null);
+                  setRemarkCount(null);
+                  projectAPI.getRemarkRatio(project.id)
+                    .then((data) => {
+                      setRemarkRatio(data.ratio);
+                      setRemarkStatus(data.status);
+                      setDefectCount(data.defects);
+                      setRemarkCount(data.remarks);
+                    })
+                    .catch((err) => {
+                      setRemarkError(err instanceof Error ? err.message : 'Failed to fetch remark ratio');
+                    })
+                    .finally(() => setRemarkLoading(false));
+                }
+              }}>
+                <Feather name="refresh-cw" size={20} color="#888" />
+              </TouchableOpacity>
             </View>
-          </View>
-
-                <View style={styles.reopenedCard}>
-                  <Text style={styles.reopenedTitle}>Defects Reopened Multiple Times</Text>
-                  <PieChart
-                    data={[
-                      {
-                        name: '2 times',
-                        population: 3,
-                        color: '#2563eb',
-                        legendFontColor: '#222',
-                        legendFontSize: 15,
-                      },
-                      {
-                        name: '3 times',
-                        population: 1,
-                        color: '#facc15',
-                        legendFontColor: '#222',
-                        legendFontSize: 15,
-                      },
-                    ]}
-                    width={Dimensions.get('window').width - 48}
-                    height={220}
-                    chartConfig={{
-                      color: () => '#222',
-                      labelColor: () => '#222',
-                      backgroundColor: '#fff',
-                      backgroundGradientFrom: '#fff',
-                      backgroundGradientTo: '#fff',
-                      decimalPlaces: 1,
-                    }}
-                    accessor={'population'}
-                    backgroundColor={'transparent'}
-                    paddingLeft={'80'}
-                    hasLegend={false}
-                    absolute
-                  />
-                  {/* Custom Legend */}
-                  <View style={styles.legendBox}>
-                    <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} />
-                      <Text style={styles.legendLabel}>2 times: 3 (75.0%)</Text>
-                    </View>
-                    <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: '#facc15' }]} />
-                      <Text style={styles.legendLabel}>3 times: 1 (25.0%)</Text>
-                    </View>
+            {remarkLoading ? (
+              <Text style={{ color: '#888', fontSize: 16, marginVertical: 16 }}>Loading...</Text>
+            ) : remarkError ? (
+              <Text style={{ color: '#ef4444', fontSize: 16, marginVertical: 16 }}>Error: {remarkError}</Text>
+            ) : (
+              <>
+                <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#222', marginBottom: 2 }}>
+                  {typeof remarkRatio === 'number' && !isNaN(remarkRatio) ? (remarkRatio * 100).toFixed(2) : '97.79'}%
+                </Text>
+                <Text style={{ color: '#666', fontSize: 15, marginBottom: 12 }}>Defect to Remark Ratio (%)</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
+                  <View style={{ alignItems: 'center', marginHorizontal: 24 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222' }}>{typeof defectCount === 'number' && !isNaN(defectCount) ? defectCount : '459'}</Text>
+                    <Text style={{ fontSize: 13, color: '#888' }}>Defects</Text>
+                  </View>
+                  <View style={{ alignItems: 'center', marginHorizontal: 24 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222' }}>{typeof remarkCount === 'number' && !isNaN(remarkCount) ? remarkCount : '449'}</Text>
+                    <Text style={{ fontSize: 13, color: '#888' }}>Remarks</Text>
                   </View>
                 </View>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ backgroundColor: remarkStatus === 'Critical' ? '#fee2e2' : remarkStatus === 'Warning' ? '#fde68a' : '#dcfce7', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 4, alignSelf: 'center' }}>
+                    <Text style={{ color: remarkStatus === 'Critical' ? '#ef4444' : remarkStatus === 'Warning' ? '#a16207' : '#15803d', fontWeight: 'bold', fontSize: 16 }}>{typeof remarkStatus === 'string' && remarkStatus ? remarkStatus : 'Medium'}</Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
         </View>
       {/* Defect Distribution by Type Card */}
       <View style={styles.distributionCard}>
@@ -664,13 +670,12 @@ const ProjectOverviewScreen = () => {
         <LineChart
           data={{
             labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
-            datasets: [
-              {
+            datasets:
+              [{
                 data: [2, 3, 1, 4, 2, 3, 2, 1, 2, 1],
                 color: () => '#2563eb',
                 strokeWidth: 2,
-              },
-            ],
+              }],
           }}
           width={Dimensions.get('window').width - 48}
           height={220}
@@ -718,13 +723,12 @@ const ProjectOverviewScreen = () => {
         <LineChart
           data={{
             labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
-            datasets: [
-              {
+            datasets:
+              [{
                 data: [3, 2, 4, 3, 2, 3, 2, 2, 1, 2],
                 color: () => '#14b8a6',
                 strokeWidth: 2,
-              },
-            ],
+              }],
           }}
           width={Dimensions.get('window').width - 48}
           height={220}
@@ -1424,4 +1428,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectOverviewScreen; 
+export default ProjectOverviewScreen;

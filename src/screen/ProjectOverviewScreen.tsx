@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
@@ -142,6 +143,49 @@ const ProjectOverviewScreen = () => {
   const [defectCount, setDefectCount] = useState<number | null>(null);
   const [remarkCount, setRemarkCount] = useState<number | null>(null);
 
+  // --- Defect by Module API state/hooks ---
+  const [defectModuleData, setDefectModuleData] = useState<Array<{ name: string; population: number; color?: string; legendFontColor?: string; legendFontSize?: number }>>([]);
+  const [defectModuleLoading, setDefectModuleLoading] = useState(false);
+  const [defectModuleError, setDefectModuleError] = useState<string | null>(null);
+
+  // ...existing code...
+
+  // Use API data when available, fallback to static data
+  const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
+  const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
+  const [showHighStatusModal, setShowHighStatusModal] = useState(false);
+  const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
+  const [showLowStatusModal, setShowLowStatusModal] = useState(false);
+  // Add fallback id for static projects (use name as id)
+  const project = projectsToUse[selectedProjectIdx]
+    ? { ...projectsToUse[selectedProjectIdx], id: (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name }
+    : { ...projectsToUse[0], id: (projectsToUse[0] as any).id || projectsToUse[0].name };
+
+  // Fetch defect summary by module on project change
+  useEffect(() => {
+    if (!project?.id) return;
+    setDefectModuleLoading(true);
+    setDefectModuleError(null);
+    projectAPI.getDefectSummaryByModule(project.project_id)
+      .then((data) => {
+        const chartColors = [
+          '#2563eb', '#10b981', '#facc15', '#ef4444', '#a78bfa', '#f472b6', '#fb7185', '#f59e42', '#22d3ee', '#a3e635'
+        ];
+        const withColors = data.map((item, idx) => ({
+          ...item,
+          color: item.color || chartColors[idx % chartColors.length],
+          legendFontColor: '#222',
+          legendFontSize: 15,
+        }));
+        setDefectModuleData(withColors);
+      })
+      .catch((err) => {
+        setDefectModuleError(err instanceof Error ? err.message : 'Failed to fetch defect summary by module');
+        setDefectModuleData([]);
+      })
+      .finally(() => setDefectModuleLoading(false));
+  }, [project?.id]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
        headerTitle: () => (
@@ -166,6 +210,8 @@ const ProjectOverviewScreen = () => {
       setLoading(true);
       setError(null);
       const fetchedProjects = await projectAPI.getProjects();
+      console.log(fetchedProjects);
+      
       setApiProjects(fetchedProjects);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects';
@@ -182,16 +228,7 @@ const ProjectOverviewScreen = () => {
   }, []);
 
   // Use API data when available, fallback to static data
-  const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
-
-  const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
-  const [showHighStatusModal, setShowHighStatusModal] = useState(false);
-  const [showMediumStatusModal, setShowMediumStatusModal] = useState(false);
-  const [showLowStatusModal, setShowLowStatusModal] = useState(false);
-  // Add fallback id for static projects (use name as id)
-  const project = projectsToUse[selectedProjectIdx]
-    ? { ...projectsToUse[selectedProjectIdx], id: (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name }
-    : { ...projectsToUse[0], id: (projectsToUse[0] as any).id || projectsToUse[0].name };
+  // ...existing code...
   const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
   const scrollToProject = (dir: 'left' | 'right') => {
@@ -201,6 +238,10 @@ const ProjectOverviewScreen = () => {
 
   return (
     <ScrollView style={styles.bg} contentContainerStyle={{ paddingBottom: 32 }}>
+
+      
+
+      
 
       {/* Time to Fix Defects Card (at the end) */}
       {/* ...existing code... */}
@@ -522,63 +563,14 @@ const ProjectOverviewScreen = () => {
             </View>
             <Text style={styles.metricDesc}>Weighted severity score (higher = more severe defects)</Text>
           </View>
-          {/* Defect to Remark Ratio Card (API integrated) */}
-          <View style={{ backgroundColor: '#fef9c3', borderRadius: 16, padding: 18, marginVertical: 8, marginHorizontal: 0, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>Defect to Remark Ratio</Text>
-              <TouchableOpacity onPress={() => {
-                if (project?.id) {
-                  setRemarkLoading(true);
-                  setRemarkError(null);
-                  setRemarkRatio(null);
-                  setRemarkStatus('');
-                  setDefectCount(null);
-                  setRemarkCount(null);
-                  projectAPI.getRemarkRatio(project.id)
-                    .then((data) => {
-                      setRemarkRatio(data.ratio);
-                      setRemarkStatus(data.status);
-                      setDefectCount(data.defects);
-                      setRemarkCount(data.remarks);
-                    })
-                    .catch((err) => {
-                      setRemarkError(err instanceof Error ? err.message : 'Failed to fetch remark ratio');
-                    })
-                    .finally(() => setRemarkLoading(false));
-                }
-              }}>
-                <Feather name="refresh-cw" size={20} color="#888" />
-              </TouchableOpacity>
-            </View>
-            {remarkLoading ? (
-              <Text style={{ color: '#888', fontSize: 16, marginVertical: 16 }}>Loading...</Text>
-            ) : remarkError ? (
-              <Text style={{ color: '#ef4444', fontSize: 16, marginVertical: 16 }}>Error: {remarkError}</Text>
-            ) : (
-              <>
-                <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#222', marginBottom: 2 }}>
-                  {typeof remarkRatio === 'number' && !isNaN(remarkRatio) ? (remarkRatio * 100).toFixed(2) : '97.79'}%
-                </Text>
-                <Text style={{ color: '#666', fontSize: 15, marginBottom: 12 }}>Defect to Remark Ratio (%)</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
-                  <View style={{ alignItems: 'center', marginHorizontal: 24 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222' }}>{typeof defectCount === 'number' && !isNaN(defectCount) ? defectCount : '459'}</Text>
-                    <Text style={{ fontSize: 13, color: '#888' }}>Defects</Text>
-                  </View>
-                  <View style={{ alignItems: 'center', marginHorizontal: 24 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222' }}>{typeof remarkCount === 'number' && !isNaN(remarkCount) ? remarkCount : '449'}</Text>
-                    <Text style={{ fontSize: 13, color: '#888' }}>Remarks</Text>
-                  </View>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                  <View style={{ backgroundColor: remarkStatus === 'Critical' ? '#fee2e2' : remarkStatus === 'Warning' ? '#fde68a' : '#dcfce7', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 4, alignSelf: 'center' }}>
-                    <Text style={{ color: remarkStatus === 'Critical' ? '#ef4444' : remarkStatus === 'Warning' ? '#a16207' : '#15803d', fontWeight: 'bold', fontSize: 16 }}>{typeof remarkStatus === 'string' && remarkStatus ? remarkStatus : 'Medium'}</Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
+          {/* ...Defect to Remark Ratio Card removed... */}
         </View>
+
+
+  {/* Defect to Remark Ratio Card (dynamic, API-powered) */}
+{  console.log(project)}
+  
+  <DefectRemarkRatioCard projectId={project.project_id} />
       {/* Defect Distribution by Type Card */}
       <View style={styles.distributionCard}>
         <Text style={styles.distributionTitle}>Defect Distribution by Type</Text>
@@ -770,51 +762,35 @@ const ProjectOverviewScreen = () => {
           <Text style={styles.timeToFindXAxis}>Time (Day)</Text>
         </View>
       </View>
-      {/* Defects by Module Card (now last) */}
+      {/* Defects by Module Card (now last, API integrated) */}
       <View style={styles.fixDefectCard}>
         <Text style={styles.fixDefectTitle}>Defects by Module</Text>
-        <PieChart
-          data={[
-            { name: 'Configurations', population: 80, color: '#2563eb', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Project Management', population: 49, color: '#10b981', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Bench', population: 56, color: '#facc15', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Defects', population: 60, color: '#ef4444', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Test Cases', population: 54, color: '#a78bfa', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Employee', population: 67, color: '#f472b6', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Releases', population: 35, color: '#fb7185', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Project', population: 22, color: '#f59e42', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Main Template', population: 3, color: '#22d3ee', legendFontColor: '#222', legendFontSize: 15 },
-            { name: 'Dashboard', population: 10, color: '#a3e635', legendFontColor: '#222', legendFontSize: 15 },
-          ]}
-          width={Dimensions.get('window').width - 48}
-          height={260}
-          chartConfig={{
-            color: () => '#222',
-            labelColor: () => '#222',
-            backgroundColor: '#fff',
-            backgroundGradientFrom: '#fff',
-            backgroundGradientTo: '#fff',
-            decimalPlaces: 2,
-          }}
-          accessor={'population'}
-          backgroundColor={'transparent'}
-          paddingLeft={'80'}
-          hasLegend={false}
-          absolute
-        />
-        {/* Custom Legend */}
-        <View style={styles.fixDefectLegendBox}>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} /><Text style={styles.legendLabel}>Configurations <Text style={{fontWeight:'bold'}}>80</Text> (18.35%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#10b981' }]} /><Text style={styles.legendLabel}>Project Management <Text style={{fontWeight:'bold'}}>49</Text> (11.24%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#facc15' }]} /><Text style={styles.legendLabel}>Bench <Text style={{fontWeight:'bold'}}>56</Text> (12.84%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendLabel}>Defects <Text style={{fontWeight:'bold'}}>60</Text> (13.76%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#a78bfa' }]} /><Text style={styles.legendLabel}>Test Cases <Text style={{fontWeight:'bold'}}>54</Text> (12.39%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#f472b6' }]} /><Text style={styles.legendLabel}>Employee <Text style={{fontWeight:'bold'}}>67</Text> (15.37%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#fb7185' }]} /><Text style={styles.legendLabel}>Releases <Text style={{fontWeight:'bold'}}>35</Text> (8.03%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#f59e42' }]} /><Text style={styles.legendLabel}>Project <Text style={{fontWeight:'bold'}}>22</Text> (5.05%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#22d3ee' }]} /><Text style={styles.legendLabel}>Main Template <Text style={{fontWeight:'bold'}}>3</Text> (0.69%)</Text></View>
-          <View style={styles.fixDefectLegendRow}><View style={[styles.legendDot, { backgroundColor: '#a3e635' }]} /><Text style={styles.legendLabel}>Dashboard <Text style={{fontWeight:'bold'}}>10</Text> (2.29%)</Text></View>
-        </View>
+        {defectModuleLoading ? (
+          <Text style={{ color: '#888', fontSize: 16, marginVertical: 16 }}>Loading...</Text>
+        ) : defectModuleError ? (
+          <Text style={{ color: '#ef4444', fontSize: 16, marginVertical: 16 }}>Error: {defectModuleError}</Text>
+        ) : (
+          <PieChart
+            data={defectModuleData.length > 0 ? defectModuleData : [
+              { name: 'No Data', population: 1, color: '#e5e7eb', legendFontColor: '#222', legendFontSize: 15 }
+            ]}
+            width={Dimensions.get('window').width - 48}
+            height={260}
+            chartConfig={{
+              color: () => '#222',
+              labelColor: () => '#222',
+              backgroundColor: '#fff',
+              backgroundGradientFrom: '#fff',
+              backgroundGradientTo: '#fff',
+              decimalPlaces: 2,
+            }}
+            accessor={'population'}
+            backgroundColor={'transparent'}
+            paddingLeft={'80'}
+            hasLegend={false}
+            absolute
+          />
+        )}
       </View>
     </ScrollView>
   );
@@ -1429,3 +1405,90 @@ const styles = StyleSheet.create({
 });
 
 export default ProjectOverviewScreen;
+
+
+
+type RemarkRatioData = {
+  ratio: string;
+  category: string;
+  color: string;
+  defectsCount: number;
+  remarksCount: number;
+};
+
+interface DefectRemarkRatioCardProps {
+  projectId: string;
+}
+
+const DefectRemarkRatioCard: React.FC<DefectRemarkRatioCardProps> = ({ projectId }) => {
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [data, setData] = React.useState<RemarkRatioData | null>(null);
+console.log("jjj");
+
+  const fetchRatio = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await projectAPI.getRemarkRatio(projectId);
+      console.log(result);
+      
+      // Ensure the result matches the expected type
+      setData({
+        ratio: typeof result.ratio === 'number' ? `${result.ratio}%` : result.ratio ?? '--',
+        category: result.category ?? result.status ?? '--',
+        color: result.color ?? '',
+        defectsCount: result.defectsCount ?? result.defects ?? '--',
+        remarksCount: result.remarksCount ?? result.remarks ?? '--',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch defect to remark ratio');
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchRatio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  return (
+    <View style={{ backgroundColor: '#fef9c3', borderRadius: 16, padding: 18, marginVertical: 8, marginHorizontal: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>Defect to Remark Ratio</Text>
+        <TouchableOpacity onPress={fetchRatio} style={{ padding: 4 }}>
+          <Text style={{ fontSize: 18, color: '#b45309' }}>⟳</Text>
+        </TouchableOpacity>
+      </View>
+      {loading ? (
+        <Text style={{ fontSize: 18, color: '#b45309', marginBottom: 8 }}>Loading...</Text>
+      ) : error ? (
+        <Text style={{ fontSize: 14, color: '#ef4444', marginBottom: 8 }}>{error}</Text>
+      ) : data ? (
+        <>
+          <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#b45309', marginBottom: 2 }}>{data.ratio || '--'}</Text>
+          <Text style={{ fontSize: 15, color: '#b45309', marginBottom: 8 }}>Defect to Remark Ratio (%)</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ alignItems: 'center', marginRight: 24 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#b45309' }}>{data.defectsCount ?? '--'}</Text>
+              <Text style={{ fontSize: 14, color: '#b45309' }}>Defects</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#b45309' }}>{data.remarksCount ?? '--'}</Text>
+              <Text style={{ fontSize: 14, color: '#b45309' }}>Remarks</Text>
+            </View>
+          </View>
+          <View style={{ alignItems: 'center', marginTop: 4 }}>
+            <View style={{ backgroundColor: '#fde68a', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 4 }}>
+              <Text style={{ color: '#b45309', fontWeight: 'bold', fontSize: 16 }}>{data.category || '--'}</Text>
+            </View>
+          </View>
+        </>
+      ) : (
+        <Text style={{ fontSize: 18, color: '#b45309', marginBottom: 8 }}>No data available</Text>
+      )}
+    </View>
+  );
+};

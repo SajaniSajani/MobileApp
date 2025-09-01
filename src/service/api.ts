@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // API base configuration
-const API_BASE_URL = 'http://192.168.8.101:3000';
+const API_BASE_URL = 'http://192.168.1.7:3000';
 
 // Project interface based on the actual API response structure
 export interface Project {
@@ -52,14 +52,14 @@ export interface ApiError {
 // Project API class
 class ProjectAPI {
   /**
-   * Fetch Defect to Remark Ratio for a project
+   * Fetch Defect Summary by Module for a project
    * @param projectId - Project ID
-   * @returns Promise<{ ratio: number; status: string; defects: number; remarks: number }>
+   * @returns Promise<Array<{ name: string; population: number; color?: string }>>
    */
-  async getRemarkRatio(projectId: string): Promise<{ ratio: number; status: string; defects: number; remarks: number }> {
+  async getDefectSummaryByModule(projectId: string): Promise<Array<{ name: string; population: number; color?: string }>> {
     try {
-      const response: AxiosResponse<ApiResponse<{ ratio: number; status: string; defects: number; remarks: number }>> = await axios.get(
-        `${this.baseURL}/api/dashboard/remark-ratio/${projectId}`,
+      const response: AxiosResponse<ApiResponse<any>> = await axios.get(
+        `${this.baseURL}/api/dashboard/defect-summary-by-module/${projectId}`,
         {
           timeout: 10000,
           headers: {
@@ -69,7 +69,61 @@ class ProjectAPI {
         }
       );
       if (response.data.success) {
-        return response.data.data;
+        // Transform defectSummaryByModule to expected format
+        const summary = response.data.data.defectSummaryByModule || [];
+        return summary.map((item: any) => ({
+          name: item.label,
+          population: item.value
+        }));
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch defect summary by module');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+  /**
+   * Fetch Defect to Remark Ratio for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ ratio: number; status: string; defects: number; remarks: number }>
+   */
+  async getRemarkRatio(projectId: string): Promise<{ ratio: number; status: string; defects: number; remarks: number }> {
+    try {
+      console.log( `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`);
+      
+      const response: AxiosResponse<ApiResponse<any>> = await axios.get(
+        `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`,  //${this.baseURL}/api/
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }
+      );
+      if (response.data.success) {
+        // The actual API response structure:
+        // response.data.data contains the needed fields
+        const data = response.data.data;
+        return {
+          ratio: data.ratio,
+          category: data.category,
+          color: data.color,
+          defectsCount: data.defectsCount,
+          remarksCount: data.remarksCount
+        };
       } else {
         throw new Error(response.data.message || 'Failed to fetch remark ratio');
       }
@@ -119,6 +173,7 @@ class ProjectAPI {
       const totalDefects = Math.round(project.kloc * defectDensity);
 
       return {
+        project_id:project.id,
         id: project.project_id,
         name: project.project_name,
         risk,
@@ -230,3 +285,26 @@ export const projectAPI = new ProjectAPI();
 
 // Export the class for custom instances
 export default ProjectAPI;
+
+/**
+ * Standalone function to fetch Defect to Remark Ratio for a project
+ * @param projectId - Project ID (number or string)
+ * @returns API response data
+ */
+export const getDefectRemarkRatio = async (projectId: number | string) => {
+  try {
+    const response = await axios.get(`http://192.168.1.7:3000/api/dashboard/defect-to-remark-ratio/${projectId}`);
+    console.log(`Defect to Remark Ratio Response for Project ${projectId}:`, response.data);
+    console.log('Success:', response.data.message);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error(`Error fetching defect to remark ratio for project ${projectId}:`, error.response.data.message || error.message);
+    } else if (error instanceof Error) {
+      console.error(`Error fetching defect to remark ratio for project ${projectId}:`, error.message);
+    } else {
+      console.error(`Error fetching defect to remark ratio for project ${projectId}: An unknown error occurred`);
+    }
+    throw error;
+  }
+};

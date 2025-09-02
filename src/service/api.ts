@@ -52,6 +52,82 @@ export interface ApiError {
 // Project API class
 class ProjectAPI {
   /**
+   * Fetch Defect Density for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ projectId: string; defectDensity: number; totalDefects: number; linesOfCode: number; interpretation: string }>
+   */
+  async getDefectDensity(projectId: string): Promise<{ projectId: string; defectDensity: number; totalDefects: number; linesOfCode: number; interpretation: string }> {
+    try {
+      const response: AxiosResponse<any> = await axios.get(
+        `${this.baseURL}/api/dashboard/defect-density/${projectId}`,
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch defect density');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+  /**
+   * Fetch Defect Distribution by Type for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ defectTypes: Array<{ defectType: string; defectCount: number; percentage: number }>; totalDefectCount: number; mostCommonDefectType: string; mostCommonDefectCount: number }>
+   */
+  async getDefectTypeBreakdown(projectId: string): Promise<{ defectTypes: Array<{ defectType: string; defectCount: number; percentage: number }>; totalDefectCount: number; mostCommonDefectType: string; mostCommonDefectCount: number }> {
+    try {
+      const response: AxiosResponse<any> = await axios.get(
+        `${this.baseURL}/api/dashboard/defect-type-breakdown/${projectId}`,
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      if (response.data.success && response.data.data?.data) {
+        return response.data.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch defect type breakdown');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+  /**
    * Fetch Defect Summary by Module for a project
    * @param projectId - Project ID
    * @returns Promise<Array<{ name: string; population: number; color?: string }>>

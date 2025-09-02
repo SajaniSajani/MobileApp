@@ -152,6 +152,24 @@ const ProjectOverviewScreen = () => {
   const [severityIndexLoading, setSeverityIndexLoading] = useState(false);
   const [severityIndexError, setSeverityIndexError] = useState<string | null>(null);
 
+  // --- Defect Distribution by Type API state/hooks ---
+  const [defectTypeData, setDefectTypeData] = useState<Array<{ name: string; population: number; color: string; legendFontColor: string; legendFontSize: number }>>([]);
+  const [defectTypeLoading, setDefectTypeLoading] = useState(false);
+  const [defectTypeError, setDefectTypeError] = useState<string | null>(null);
+  const [defectTypeTotal, setDefectTypeTotal] = useState<number>(0);
+  const [defectTypeMostCommon, setDefectTypeMostCommon] = useState<string>('');
+  const [defectTypeMostCommonCount, setDefectTypeMostCommonCount] = useState<number>(0);
+
+  // --- Defect Density API state/hooks ---
+  const [defectDensityData, setDefectDensityData] = useState<{
+    defectDensity: number;
+    totalDefects: number;
+    linesOfCode: number;
+    interpretation: string;
+  } | null>(null);
+  const [defectDensityLoading, setDefectDensityLoading] = useState(false);
+  const [defectDensityError, setDefectDensityError] = useState<string | null>(null);
+
   // Use API data when available, fallback to static data
   const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
@@ -181,13 +199,15 @@ const ProjectOverviewScreen = () => {
         const chartColors = [
           '#2563eb', '#10b981', '#facc15', '#ef4444', '#a78bfa', '#f472b6', '#fb7185', '#f59e42', '#22d3ee', '#a3e635'
         ];
-        const withColors = data.map((item, idx) => ({
+        const total = data.reduce((sum, item) => sum + (item.population || 0), 0);
+        const withColorsAndPercent = data.map((item, idx) => ({
           ...item,
           color: item.color || chartColors[idx % chartColors.length],
           legendFontColor: '#222',
           legendFontSize: 15,
+          percentage: total > 0 ? (item.population / total) * 100 : 0
         }));
-        setDefectModuleData(withColors);
+        setDefectModuleData(withColorsAndPercent);
       })
       .catch((err) => {
         setDefectModuleError(err instanceof Error ? err.message : 'Failed to fetch defect summary by module');
@@ -211,6 +231,55 @@ const ProjectOverviewScreen = () => {
       })
       .finally(() => setSeverityIndexLoading(false));
   }, [project?.id]);
+
+  // Fetch defect type breakdown on project change
+  useEffect(() => {
+    if (!project?.project_id) return;
+    setDefectTypeLoading(true);
+    setDefectTypeError(null);
+    projectAPI.getDefectTypeBreakdown(project.project_id)
+      .then((data) => {
+        const chartColors = [
+          '#2563eb', '#10b981', '#facc15', '#ef4444', '#a78bfa', '#f472b6', '#fb7185', '#f59e42', '#22d3ee', '#a3e635'
+        ];
+        setDefectTypeTotal(data.totalDefectCount ?? 0);
+        setDefectTypeMostCommon(data.mostCommonDefectType ?? '');
+        setDefectTypeMostCommonCount(data.mostCommonDefectCount ?? 0);
+        const chartData = (data.defectTypes || []).map((item, idx) => ({
+          name: item.defectType,
+          population: item.defectCount,
+          color: chartColors[idx % chartColors.length],
+          legendFontColor: '#222',
+          legendFontSize: 15,
+          percentage: item.percentage
+        }));
+        setDefectTypeData(chartData);
+      })
+      .catch((err) => {
+        setDefectTypeError(err instanceof Error ? err.message : 'Failed to fetch defect type breakdown');
+        setDefectTypeData([]);
+        setDefectTypeTotal(0);
+        setDefectTypeMostCommon('');
+        setDefectTypeMostCommonCount(0);
+      })
+      .finally(() => setDefectTypeLoading(false));
+  }, [project?.project_id]);
+
+  // Fetch defect density on project change
+  useEffect(() => {
+    if (!project?.project_id) return;
+    setDefectDensityLoading(true);
+    setDefectDensityError(null);
+    projectAPI.getDefectDensity(project.project_id)
+      .then((data) => {
+        setDefectDensityData(data);
+      })
+      .catch((err) => {
+        setDefectDensityError(err instanceof Error ? err.message : 'Failed to fetch defect density');
+        setDefectDensityData(null);
+      })
+      .finally(() => setDefectDensityLoading(false));
+  }, [project?.project_id]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -254,7 +323,6 @@ const ProjectOverviewScreen = () => {
   }, []);
 
   // Use API data when available, fallback to static data
-  // ...existing code...
   const defectData = DEFECT_DATA[project.name as DefectDataKey] || DEFECT_DATA['Defect Tracker'];
 
   const scrollToProject = (dir: 'left' | 'right') => {
@@ -385,27 +453,43 @@ const ProjectOverviewScreen = () => {
       <Text style={styles.sectionTitle}>Defect Density Analysis</Text>
       <View style={styles.densityCard}>
         <Text style={styles.densityCardTitle}>Project Defect Density</Text>
+        {/* Defect Density Meter (Speedometer) */}
         <View style={styles.speedometerContainer}>
           <View style={styles.speedometer}>
             <CustomSpeedometer
-              value={project.defectDensity || 15}
+              value={defectDensityData?.defectDensity ?? 0}
               size={200}
               minValue={0}
-              maxValue={50}
+              maxValue={1}
             />
           </View>
-          
         </View>
-        <View style={styles.densityMetrics}>
-          <View style={styles.densityMetric}>
-            <Text style={styles.metricValue}>{project.totalDefects || 45}</Text>
-            <Text style={styles.metricLabel}>Total Defects</Text>
-          </View>
-          <View style={styles.densityMetric}>
-            <Text style={styles.metricValue}>{project.linesOfCode ? (project.linesOfCode / 1000).toFixed(1) + 'K' : '3.0K'}</Text>
-            <Text style={styles.metricLabel}>Lines of Code</Text>
-          </View>
-        </View>
+        {defectDensityLoading ? (
+          <Text style={{ color: '#888', fontSize: 16 }}>Loading...</Text>
+        ) : defectDensityError ? (
+          <Text style={{ color: '#ef4444', fontSize: 16 }}>{defectDensityError}</Text>
+        ) : defectDensityData ? (
+          <>
+            {/* <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#222', marginTop: 8 }}>
+              {defectDensityData.defectDensity}
+            </Text> */}
+            <View style={{ borderBottomWidth: 1, borderBottomColor: '#eee', marginVertical: 12, width: '100%' }} />
+            <View style={styles.densityMetrics}>
+              <View style={styles.densityMetric}>
+                <Text style={styles.metricValue}>{defectDensityData.totalDefects}</Text>
+                <Text style={styles.metricLabel}>Total Defects</Text>
+              </View>
+              <View style={styles.densityMetric}>
+                <Text style={styles.metricValue}>
+                  {defectDensityData.linesOfCode ? (defectDensityData.linesOfCode / 1000).toFixed(1) + 'K' : '--'}
+                </Text>
+                <Text style={styles.metricLabel}>Lines of Code</Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          <Text style={{ color: '#888', fontSize: 16 }}>No data available</Text>
+        )}
       </View>
 
       {/* Modal for Medium Status Breakdown Pie Chart */}
@@ -605,83 +689,57 @@ const ProjectOverviewScreen = () => {
       {/* Defect Distribution by Type Card */}
       <View style={styles.distributionCard}>
         <Text style={styles.distributionTitle}>Defect Distribution by Type</Text>
-        <PieChart
-          data={[
-            {
-              name: 'Functionality',
-              population: 227,
-              color: '#2563eb',
-              legendFontColor: '#222',
-              legendFontSize: 15,
-            },
-            {
-              name: 'UI',
-              population: 81,
-              color: '#10b981',
-              legendFontColor: '#222',
-              legendFontSize: 15,
-            },
-            {
-              name: 'Usability',
-              population: 28,
-              color: '#facc15',
-              legendFontColor: '#222',
-              legendFontSize: 15,
-            },
-            {
-              name: 'Validation',
-              population: 100,
-              color: '#ef4444',
-              legendFontColor: '#222',
-              legendFontSize: 15,
-            },
-          ]}
-          width={Dimensions.get('window').width - 48}
-          height={220}
-          chartConfig={{
-            color: () => '#222',
-            labelColor: () => '#222',
-            backgroundColor: '#fff',
-            backgroundGradientFrom: '#fff',
-            backgroundGradientTo: '#fff',
-            decimalPlaces: 1,
-          }}
-          accessor={'population'}
-          backgroundColor={'transparent'}
-          paddingLeft={'80'}
-          hasLegend={false}
-          absolute
-        />
+        {defectTypeLoading ? (
+          <Text style={{ color: '#888', fontSize: 16, marginVertical: 16 }}>Loading...</Text>
+        ) : defectTypeError ? (
+          <Text style={{ color: '#ef4444', fontSize: 16, marginVertical: 16 }}>Error: {defectTypeError}</Text>
+        ) : (
+          <PieChart
+            data={defectTypeData.length > 0 ? defectTypeData : [
+              { name: 'No Data', population: 1, color: '#e5e7eb', legendFontColor: '#222', legendFontSize: 15 }
+            ]}
+            width={Dimensions.get('window').width - 48}
+            height={220}
+            chartConfig={{
+              color: () => '#222',
+              labelColor: () => '#222',
+              backgroundColor: '#fff',
+              backgroundGradientFrom: '#fff',
+              backgroundGradientTo: '#fff',
+              decimalPlaces: 1,
+            }}
+            accessor={'population'}
+            backgroundColor={'transparent'}
+            paddingLeft={'80'}
+            hasLegend={false}
+            absolute
+          />
+        )}
         {/* Custom Legend */}
         <View style={styles.legendBox}>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: '#2563eb' }]} />
-            <Text style={styles.legendLabel}>Functionality: 227 (52.1%)</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
-            <Text style={styles.legendLabel}>UI: 81 (18.6%)</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: '#facc15' }]} />
-            <Text style={styles.legendLabel}>Usability: 28 (6.4%)</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-            <Text style={styles.legendLabel}>Validation: 100 (22.9%)</Text>
-          </View>
+          {defectTypeData.length > 0 ? defectTypeData.map((item, idx) => (
+            <View key={item.name} style={styles.legendRow}>
+              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+              <Text style={styles.legendLabel}>{item.name}: {item.population} ({item.percentage}%)</Text>
+            </View>
+          )) : (
+            <View style={styles.legendRow}>
+              <View style={[styles.legendDot, { backgroundColor: '#e5e7eb' }]} />
+              <Text style={styles.legendLabel}>No Data</Text>
+            </View>
+          )}
         </View>
         {/* Totals Row */}
         <View style={styles.distributionTotalsRow}>
           <View style={styles.distributionTotalBox}>
-            <Text style={styles.distributionTotalValue}>436</Text>
+            <Text style={styles.distributionTotalValue}>{defectTypeTotal}</Text>
             <Text style={styles.distributionTotalLabel}>Total Defects</Text>
           </View>
           <View style={styles.distributionTotalBox}>
-            <Text style={[styles.distributionTotalValue, { color: '#2563eb' }]}>227</Text>
+            <Text style={[styles.distributionTotalValue, { color: defectTypeData[0]?.color || '#2563eb' }]}>{defectTypeMostCommonCount}</Text>
             <Text style={styles.distributionTotalLabel}>
               Most Common{"\n"}
-              <Text style={{ fontWeight: 'bold' }}>Functionality</Text>
+              <Text style={{ fontWeight: 'bold' }}>{defectTypeMostCommon}</Text>
             </Text>
           </View>
         </View>
@@ -801,26 +859,45 @@ const ProjectOverviewScreen = () => {
         ) : defectModuleError ? (
           <Text style={{ color: '#ef4444', fontSize: 16, marginVertical: 16 }}>Error: {defectModuleError}</Text>
         ) : (
-          <PieChart
-            data={defectModuleData.length > 0 ? defectModuleData : [
-              { name: 'No Data', population: 1, color: '#e5e7eb', legendFontColor: '#222', legendFontSize: 15 }
-            ]}
-            width={Dimensions.get('window').width - 48}
-            height={260}
-            chartConfig={{
-              color: () => '#222',
-              labelColor: () => '#222',
-              backgroundColor: '#fff',
-              backgroundGradientFrom: '#fff',
-              backgroundGradientTo: '#fff',
-              decimalPlaces: 2,
-            }}
-            accessor={'population'}
-            backgroundColor={'transparent'}
-            paddingLeft={'80'}
-            hasLegend={false}
-            absolute
-          />
+          <>
+            <PieChart
+              data={defectModuleData.length > 0 ? defectModuleData : [
+                { name: 'No Data', population: 1, color: '#e5e7eb', legendFontColor: '#222', legendFontSize: 15 }
+              ]}
+              width={Dimensions.get('window').width - 48}
+              height={260}
+              chartConfig={{
+                color: () => '#222',
+                labelColor: () => '#222',
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 2,
+              }}
+              accessor={'population'}
+              backgroundColor={'transparent'}
+              paddingLeft={'80'}
+              hasLegend={false}
+              absolute
+            />
+            {/* Custom Legend Below Pie Chart */}
+            <View style={styles.legendBox}>
+              {defectModuleData.length > 0 ? defectModuleData.map((item, idx) => (
+                <View key={item.name} style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                  <Text style={styles.legendLabel}>
+                    {item.name}: <Text style={{ fontWeight: 'bold' }}>{item.population}</Text>
+                    <Text style={{ color: '#888', fontSize: 15 }}> ({item.percentage ? item.percentage.toFixed(2) : '0.00'}%)</Text>
+                  </Text>
+                </View>
+              )) : (
+                <View style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: '#e5e7eb' }]} />
+                  <Text style={styles.legendLabel}>No Data</Text>
+                </View>
+              )}
+            </View>
+          </>
         )}
       </View>
     </ScrollView>

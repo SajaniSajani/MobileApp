@@ -69,10 +69,10 @@ class ProjectAPI {
         }
       );
       if (response.data.success) {
-        // Transform defectSummaryByModule to expected format
-        const summary = response.data.data.defectSummaryByModule || [];
-        return summary.map((item: any) => ({
-          name: item.label,
+        // Correct parsing for your API response
+        const modules = response.data.data.data || [];
+        return modules.map((item: any) => ({
+          name: item.name,
           population: item.value
         }));
       } else {
@@ -95,16 +95,53 @@ class ProjectAPI {
     }
   }
   /**
+   * Fetch Defect Severity Index for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ projectId: string; totalDefects: number; actualSeverityScore: number; maximumSeverityScore: number; dsiPercentage: number; interpretation: string; validDefects: number }>
+   */
+  async getDefectSeverityIndex(projectId: string): Promise<{ projectId: string; totalDefects: number; actualSeverityScore: number; maximumSeverityScore: number; dsiPercentage: number; interpretation: string; validDefects: number }> {
+    try {
+      const response: AxiosResponse<any> = await axios.get(
+        `${this.baseURL}/api/dashboard/defect-severity-index/${projectId}`,
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      if (response.data.status === 'Success' && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch defect severity index');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+  /**
    * Fetch Defect to Remark Ratio for a project
    * @param projectId - Project ID
    * @returns Promise<{ ratio: number; status: string; defects: number; remarks: number }>
    */
-  async getRemarkRatio(projectId: string): Promise<{ ratio: number; status: string; defects: number; remarks: number }> {
+  async getRemarkRatio(projectId: string): Promise<{ ratio: number; category: string; color: string; defectsCount: number; remarksCount: number }> {
     try {
       console.log( `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`);
-      
       const response: AxiosResponse<ApiResponse<any>> = await axios.get(
-        `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`,  //${this.baseURL}/api/
+        `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`,
         {
           timeout: 10000,
           headers: {

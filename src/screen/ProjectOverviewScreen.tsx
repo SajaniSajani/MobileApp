@@ -1,4 +1,3 @@
-// ...existing code...
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { Modal } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
@@ -148,7 +147,10 @@ const ProjectOverviewScreen = () => {
   const [defectModuleLoading, setDefectModuleLoading] = useState(false);
   const [defectModuleError, setDefectModuleError] = useState<string | null>(null);
 
-  // ...existing code...
+  // --- Defect Severity Index API state/hooks ---
+  const [severityIndex, setSeverityIndex] = useState<number | null>(null);
+  const [severityIndexLoading, setSeverityIndexLoading] = useState(false);
+  const [severityIndexError, setSeverityIndexError] = useState<string | null>(null);
 
   // Use API data when available, fallback to static data
   const projectsToUse = apiProjects.length > 0 ? apiProjects : PROJECTS;
@@ -158,8 +160,16 @@ const ProjectOverviewScreen = () => {
   const [showLowStatusModal, setShowLowStatusModal] = useState(false);
   // Add fallback id for static projects (use name as id)
   const project = projectsToUse[selectedProjectIdx]
-    ? { ...projectsToUse[selectedProjectIdx], id: (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name }
-    : { ...projectsToUse[0], id: (projectsToUse[0] as any).id || projectsToUse[0].name };
+    ? {
+        ...projectsToUse[selectedProjectIdx],
+        id: (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name,
+        project_id: (projectsToUse[selectedProjectIdx] as any).project_id || (projectsToUse[selectedProjectIdx] as any).id || projectsToUse[selectedProjectIdx].name
+      }
+    : {
+        ...projectsToUse[0],
+        id: (projectsToUse[0] as any).id || projectsToUse[0].name,
+        project_id: (projectsToUse[0] as any).project_id || (projectsToUse[0] as any).id || projectsToUse[0].name
+      };
 
   // Fetch defect summary by module on project change
   useEffect(() => {
@@ -184,6 +194,22 @@ const ProjectOverviewScreen = () => {
         setDefectModuleData([]);
       })
       .finally(() => setDefectModuleLoading(false));
+  }, [project?.id]);
+
+  // Fetch defect severity index on project change
+  useEffect(() => {
+    if (!project?.id) return;
+    setSeverityIndexLoading(true);
+    setSeverityIndexError(null);
+    projectAPI.getDefectSeverityIndex(project.project_id)
+      .then((data) => {
+        setSeverityIndex(data.dsiPercentage ?? null);
+      })
+      .catch((err) => {
+        setSeverityIndexError(err instanceof Error ? err.message : 'Failed to fetch defect severity index');
+        setSeverityIndex(null);
+      })
+      .finally(() => setSeverityIndexLoading(false));
   }, [project?.id]);
 
   useLayoutEffect(() => {
@@ -557,11 +583,16 @@ const ProjectOverviewScreen = () => {
             <Text style={styles.metricTitle}>Defect Severity Index</Text>
             <View style={styles.severityIndexContainer}>
               <View style={styles.severityBarBg}>
-                <View style={[styles.severityBarFill, { height: '67.2%' }]} />
+                <View style={[styles.severityBarFill, { height: severityIndex !== null ? `${severityIndex}%` : '0%' }]} />
               </View>
-              <Text style={styles.metricSeverityValue}>67.2</Text>
+              <Text style={styles.metricSeverityValue}>
+                {severityIndexLoading ? '...' : severityIndexError ? '--' : severityIndex !== null ? severityIndex : '--'}
+              </Text>
             </View>
             <Text style={styles.metricDesc}>Weighted severity score (higher = more severe defects)</Text>
+            {severityIndexError && (
+              <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4 }}>{severityIndexError}</Text>
+            )}
           </View>
           {/* ...Defect to Remark Ratio Card removed... */}
         </View>
@@ -711,7 +742,7 @@ const ProjectOverviewScreen = () => {
       </View>
       {/* Time to Fix Defects Card (after Time to Find Defects) */}
       <View style={styles.timeToFindCard}>
-        <Text style={styles.timeToFindTitle}>Time to Fix Defects</Text>
+        <Text style={styles.timeToFixTitle}>Time to Fix Defects</Text>
         <LineChart
           data={{
             labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],

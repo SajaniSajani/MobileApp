@@ -131,6 +131,31 @@ const CustomSpeedometer = ({ value, size = 200, minValue = 0, maxValue = 50 }: S
 // import { RootStackParamList } from '../navigation/types';
 // Move useNavigation inside the component to avoid invalid hook call
 const ProjectOverviewScreen = () => {
+  // --- Defect Severity Breakdown API state/hooks ---
+  const [defectSeverityBreakdown, setDefectSeverityBreakdown] = useState<{
+    status: string;
+    statusCode: number;
+    projectId: number;
+    projectName: string;
+    totalDefects: number;
+    defectSummary: Array<{
+      severity: string;
+      Severity_color: string;
+      total: number;
+      statuses: {
+        Open: number;
+        Open_color: string;
+        Fixed: number;
+        Fixed_color: string;
+        Retest: number;
+        Retest_color: string;
+        Closed: number;
+        Closed_color: string;
+      };
+    }>;
+  } | null>(null);
+  const [defectSeverityBreakdownLoading, setDefectSeverityBreakdownLoading] = useState(false);
+  const [defectSeverityBreakdownError, setDefectSeverityBreakdownError] = useState<string | null>(null);
   const navigation = useNavigation<any>();
   const [apiProjects, setApiProjects] = useState<UIProject[]>([]);
   const [loading, setLoading] = useState(false);
@@ -190,6 +215,21 @@ const ProjectOverviewScreen = () => {
       };
 
   // Fetch defect summary by module on project change
+  // Fetch defect severity breakdown on project change
+  useEffect(() => {
+    if (!project?.project_id) return;
+    setDefectSeverityBreakdownLoading(true);
+    setDefectSeverityBreakdownError(null);
+    projectAPI.getDefectSeverityBreakdown(project.project_id)
+      .then((data) => {
+        setDefectSeverityBreakdown(data);
+      })
+      .catch((err) => {
+        setDefectSeverityBreakdownError(err instanceof Error ? err.message : 'Failed to fetch defect severity breakdown');
+        setDefectSeverityBreakdown(null);
+      })
+      .finally(() => setDefectSeverityBreakdownLoading(false));
+  }, [project?.project_id]);
   useEffect(() => {
     if (!project?.id) return;
     setDefectModuleLoading(true);
@@ -416,38 +456,56 @@ const ProjectOverviewScreen = () => {
 
       {/* Defect Severity Breakdown */}
       <Text style={styles.sectionTitle}>Defect Severity Breakdown</Text>
-      <View style={styles.defectRow}>
-        {(['High', 'Medium', 'Low'] as const).map((severity) => (
-          <View key={severity} style={[styles.defectCard, { borderColor: RISK_COLORS[severity] }]}> 
-            <Text style={[styles.defectCardTitle, { color: RISK_COLORS[severity] }]}>Defects on {severity}</Text>
-            <Text style={styles.defectTotal}>Total: {defectData[severity]?.total ?? 0}</Text>
-            <View style={styles.defectList}>
-              {Object.entries(defectData[severity] || {}).filter(([k]) => k !== 'total').map(([type, count]) => (
-                <View key={type} style={styles.defectItemRow}>
-                  <View style={[styles.dot, { backgroundColor: DEFECT_COLORS[type as keyof typeof DEFECT_COLORS] || '#888' }]} />
-                  <Text style={styles.defectType}>{type}</Text>
-                  <Text style={styles.defectCount}>{count}</Text>
-                </View>
-              ))}
+      {defectSeverityBreakdownLoading ? (
+        <View style={styles.loadingContainer}><Text style={styles.loadingText}>Loading severity breakdown...</Text></View>
+      ) : defectSeverityBreakdownError ? (
+        <View style={styles.errorContainer}><Text style={styles.errorText}>Error: {defectSeverityBreakdownError}</Text></View>
+      ) : defectSeverityBreakdown ? (
+        <View style={styles.defectRow}>
+          {defectSeverityBreakdown.defectSummary.map((item) => (
+            <View key={item.severity} style={[styles.defectCard, { borderColor: item.Severity_color }]}> 
+              <Text style={[styles.defectCardTitle, { color: item.Severity_color }]}>Defects on {item.severity}</Text>
+              <Text style={styles.defectTotal}>Total: {item.total}</Text>
+              <View style={styles.defectList}>
+                {Object.entries(item.statuses)
+                  .filter(([k]) => !k.endsWith('_color'))
+                  .map(([type, count]) => {
+                    // Map status to color
+                    let color = '#888';
+                    switch (type.toUpperCase()) {
+                      case 'REOPEN': color = '#fb5607'; break;
+                      case 'NEW': color = '#4361ee'; break;
+                      case 'OPEN': color = '#f9c74f'; break;
+                      case 'FIXED': color = '#43aa8b'; break;
+                      case 'CLOSED': color = '#577590'; break;
+                      case 'REJECT': color = '#bc3908'; break;
+                      case 'DUPLICATE': color = '#888888'; break;
+                      default:
+                        // fallback to API color if available
+                        color = item.statuses[type + '_color'] || '#888';
+                    }
+                    return (
+                      <View key={type} style={styles.defectItemRow}>
+                        <View style={[styles.dot, { backgroundColor: color }]} />
+                        <Text style={styles.defectType}>{type}</Text>
+                        <Text style={styles.defectCount}>{count}</Text>
+                      </View>
+                    );
+                  })}
+              </View>
+              <TouchableOpacity style={styles.chartBtn} onPress={() => {
+                if (item.severity === 'High') setShowHighStatusModal(true);
+                if (item.severity === 'Medium') setShowMediumStatusModal(true);
+                if (item.severity === 'Low') setShowLowStatusModal(true);
+              }}>
+                <Text style={styles.chartBtnText}>View Chart</Text>
+              </TouchableOpacity>
             </View>
-            {severity === 'High' && (
-              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowHighStatusModal(true)}>
-                <Text style={styles.chartBtnText}>View Chart</Text>
-              </TouchableOpacity>
-            )}
-            {severity === 'Medium' && (
-              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowMediumStatusModal(true)}>
-                <Text style={styles.chartBtnText}>View Chart</Text>
-              </TouchableOpacity>
-            )}
-            {severity === 'Low' && (
-              <TouchableOpacity style={styles.chartBtn} onPress={() => setShowLowStatusModal(true)}>
-                <Text style={styles.chartBtnText}>View Chart</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={{ color: '#888', fontSize: 16 }}>No severity breakdown data available</Text>
+      )}
 
       {/* Defect Density Card */}
       <Text style={styles.sectionTitle}>Defect Density Analysis</Text>
@@ -915,14 +973,14 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    minWidth: 220,
-    maxWidth: 300,
+    minWidth: 260,
+    maxWidth: 360,
     backgroundColor: '#fff',
     borderRadius: 12,
     marginHorizontal: 6,
     marginBottom: 12,
     alignItems: 'center',
-    padding: 18,
+    padding: 22,
     elevation: 2,
   },
   metricTitle: {
@@ -1128,7 +1186,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   projectTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#222',
   },
@@ -1140,7 +1198,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1563,7 +1621,7 @@ console.log("jjj");
   }, [projectId]);
 
   return (
-    <View style={{ backgroundColor: '#fef9c3', borderRadius: 16, padding: 18, marginVertical: 8, marginHorizontal: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+    <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginVertical: 8, marginHorizontal: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 8 }}>
         <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>Defect to Remark Ratio</Text>
         <TouchableOpacity onPress={fetchRatio} style={{ padding: 4 }}>

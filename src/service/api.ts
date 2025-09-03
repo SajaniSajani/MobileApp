@@ -52,6 +52,65 @@ export interface ApiError {
 // Project API class
 class ProjectAPI {
   /**
+   * Fetch Defect Severity Breakdown for a project
+   * @param projectId - Project ID
+   * @returns Promise<{ status: string; statusCode: number; projectId: number; projectName: string; totalDefects: number; defectSummary: Array<{ severity: string; Severity_color: string; total: number; statuses: { Open: number; Open_color: string; Fixed: number; Fixed_color: string; Retest: number; Retest_color: string; Closed: number; Closed_color: string } }> }>
+   */
+  async getDefectSeverityBreakdown(projectId: string | number): Promise<{
+    status: string;
+    statusCode: number;
+    projectId: number;
+    projectName: string;
+    totalDefects: number;
+    defectSummary: Array<{
+      severity: string;
+      Severity_color: string;
+      total: number;
+      statuses: {
+        Open: number;
+        Open_color: string;
+        Fixed: number;
+        Fixed_color: string;
+        Retest: number;
+        Retest_color: string;
+        Closed: number;
+        Closed_color: string;
+      };
+    }>;
+  }> {
+    try {
+      const response: AxiosResponse<any> = await axios.get(
+        `${this.baseURL}/api/dashboard/defect-severity-breakdown/${projectId}`,
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch defect severity breakdown');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        if (error.response) {
+          const status = error.response.status;
+          const message = error.response.data?.message || `HTTP ${status} error`;
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server - please check your connection');
+        }
+      }
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+  /**
    * Fetch Defect Density for a project
    * @param projectId - Project ID
    * @returns Promise<{ projectId: string; defectDensity: number; totalDefects: number; linesOfCode: number; interpretation: string }>

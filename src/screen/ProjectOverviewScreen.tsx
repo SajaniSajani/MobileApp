@@ -744,6 +744,42 @@ const ProjectOverviewScreen = () => {
 {  console.log(project)}
   
   <DefectRemarkRatioCard projectId={project.project_id} />
+   {/* Defects Reopened Multiple Times Card (below defect to remark ratio card) */}
+      <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, marginHorizontal: 16, marginBottom: 16, marginTop: 8, alignItems: 'center', elevation: 2 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#222', marginBottom: 12, alignSelf: 'flex-start' }}>Defects Reopened Multiple Times</Text>
+        <PieChart
+          data={[
+            { name: '2 times', population: 3, color: '#2563eb', legendFontColor: '#2563eb', legendFontSize: 15 },
+            { name: '3 times', population: 1, color: '#facc15', legendFontColor: '#facc15', legendFontSize: 15 },
+          ]}
+          width={320}
+          height={220}
+          chartConfig={{
+            color: () => '#222',
+            labelColor: () => '#222',
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 1,
+          }}
+          accessor={'population'}
+          backgroundColor={'transparent'}
+          paddingLeft={'40'}
+          hasLegend={false}
+          absolute
+        />
+        {/* Custom Legend */}
+        <View style={{ marginTop: 12, width: 220 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#2563eb', marginRight: 8 }} />
+            <Text style={{ fontSize: 15, color: '#2563eb', fontWeight: 'bold' }}>2 times: 3 <Text style={{ color: '#888', fontWeight: 'normal' }}>(75.0%)</Text></Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#facc15', marginRight: 8 }} />
+            <Text style={{ fontSize: 15, color: '#facc15', fontWeight: 'bold' }}>3 times: 1 <Text style={{ color: '#888', fontWeight: 'normal' }}>(25.0%)</Text></Text>
+          </View>
+        </View>
+      </View>
       {/* Defect Distribution by Type Card */}
       <View style={styles.distributionCard}>
         <Text style={styles.distributionTitle}>Defect Distribution by Type</Text>
@@ -773,6 +809,7 @@ const ProjectOverviewScreen = () => {
             absolute
           />
         )}
+        
         {/* Custom Legend */}
         <View style={styles.legendBox}>
           {defectTypeData.length > 0 ? defectTypeData.map((item, idx) => (

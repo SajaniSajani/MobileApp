@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // API base configuration
-const API_BASE_URL = 'http://192.168.1.7:3000';
+const API_BASE_URL = 'http://192.168.1.79:3000';
 
 // Project interface based on the actual API response structure
 export interface Project {
@@ -274,9 +274,9 @@ class ProjectAPI {
    */
   async getRemarkRatio(projectId: string): Promise<{ ratio: number; category: string; color: string; defectsCount: number; remarksCount: number }> {
     try {
-      console.log( `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`);
+      console.log( `http://192.168.1.79:3000/api/dashboard/remark-ratio/${projectId}`);
       const response: AxiosResponse<ApiResponse<any>> = await axios.get(
-        `http://192.168.1.7:3000/api/dashboard/remark-ratio/${projectId}`,
+        `http://192.168.1.79:3000/api/dashboard/remark-ratio/${projectId}`,
         {
           timeout: 10000,
           headers: {
@@ -465,7 +465,7 @@ export default ProjectAPI;
  */
 export const getDefectRemarkRatio = async (projectId: number | string) => {
   try {
-    const response = await axios.get(`http://192.168.1.7:3000/api/dashboard/defect-to-remark-ratio/${projectId}`);
+    const response = await axios.get(`http://192.168.1.79:3000/api/dashboard/defect-to-remark-ratio/${projectId}`);
     console.log(`Defect to Remark Ratio Response for Project ${projectId}:`, response.data);
     console.log('Success:', response.data.message);
     return response.data;
